@@ -1,0 +1,98 @@
+希望你扮演一位{{agent.role}}，你有以下特征：
+{{agent.description}}
+
+### 当前游戏状态
+- 游戏第{{game.phase}}轮，{{game.phase_name}}阶段
+- 存活玩家：{% for player in game.alive_players %}{{player.id}}号{% if not loop.last %}、{% endif %}{% endfor %}
+- 狼人团队：{% for teammate in agent.teammates %}{{teammate.id}}号{% if not loop.last %}、{% endif %}{% endfor %}
+
+### 你的狼队友信息
+{% for teammate in agent.teammates %}
+- **{{teammate.id}}号玩家**：
+  - 昨晚行动：{% if teammate.last_action %}{{teammate.last_action}}{% else %}未知{% endif %}
+  - 当前状况：{% if teammate.suspicion_level > 0.6 %}被高度怀疑{% elif teammate.suspicion_level > 0.3 %}有些怀疑{% else %}相对安全{% endif %}
+{% endfor %}
+
+### 可击杀目标分析
+{% for player in game.potential_victims %}
+**{{player.id}}号玩家**：
+- 身份推测：{% if player.role_probability.werewolf > 0.7 %}很可能是好人{% elif player.role_probability.werewolf > 0.3 %}不确定身份{% else %}可能是狼人（误判）{% endif %}
+- 威胁等级：{% if player.threat_level == "high" %}高威胁（可能是神职）{% elif player.threat_level == "medium" %}中威胁（可能是重要平民）{% else %}低威胁（普通平民）{% endif %}
+{% if player.suspicious_behaviors %}
+- 可疑行为：
+{% for behavior in player.suspicious_behaviors %}
+  - {{behavior.description}} (置信度: {{behavior.confidence}})
+{% endfor %}
+{% endif %}
+{% if player.speech_analysis %}
+- 发言分析：{{player.speech_analysis}}
+{% endif %}
+{% endfor %}
+
+{% if extra.last_night_result %}
+### 昨晚行动结果
+{{extra.last_night_result}}
+{% if extra.kill_succeeded %}
+击杀成功，目标已死亡
+{% else %}
+击杀失败或被救
+{% endif %}
+{% endif %}
+
+{% if extra.teammate_suggestions %}
+### 队友建议
+{% for suggestion in extra.teammate_suggestions %}
+- {{suggestion.teammate_id}}号队友建议：击杀{{suggestion.target_id}}号
+  - 理由：{{suggestion.reason}}
+  - 紧急度：{{suggestion.urgency}}
+{% endfor %}
+{% endif %}
+
+{% if extra.important_info %}
+### 重要信息
+{% for info in extra.important_info %}
+- {{info.type}}：{{info.description}}
+{% endif %}
+{% endif %}
+
+### 击杀策略考虑
+1. **威胁优先级**：优先清除对狼人威胁最大的角色
+2. **信息价值**：击杀能够获取关键信息或保护重要信息的目标
+3. **团队安全**：考虑击杀对狼队友安全的影响
+4. **局势控制**：通过击杀影响游戏走向和投票倾向
+
+### 特殊策略选项
+- **自刀策略**：{% if agent.can_self_kill %}可考虑{% else %}不考虑{% endif %}（用于获取信任或转移怀疑）
+- **分刀策略**：避免连续击杀同类型玩家，制造混乱
+- **保刀策略**：优先保护被怀疑的狼队友
+
+{% if extra.memory %}
+### 历史记忆参考
+{% for memory in extra.memory %}
+- 第{{memory.round}}轮：{{memory.action}} - {{memory.result}}
+{% endfor %}
+{% endif %}
+
+### 输出格式（JSON格式）
+{
+    "target_id": <你选择击杀的玩家ID>,
+    "reason": <详细的击杀理由，包含威胁分析和战略考虑>,
+    "risk_assessment": {
+        "level": "高风险/中风险/低风险",
+        "exposure_risk": <击杀该目标暴露狼人身份的风险>,
+        "team_impact": <对狼团队的影响评估>
+    },
+    "strategic_value": <该击杀的战略价值：高/中/低>,
+    "alternative_targets": [<备选目标ID1>, <备选目标ID2>],
+    "team_consideration": <对团队协作的考虑>,
+    "backup_plan": <如果首选目标不可行时的备用计划>
+}
+
+### 任务
+请根据当前游戏状况、队友建议、威胁分析和历史记忆，选择今晚要击杀的目标。你的决策应该：
+1. 最大化狼人团队的获胜概率
+2. 最小化暴露身份的风险
+3. 考虑长远的战略布局
+4. 与队友保持良好配合
+
+现在请做出你的击杀决定。

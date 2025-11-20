@@ -1,0 +1,405 @@
+[
+  {
+    "id": "werewolf",
+    "name": "普通狼人",
+    "name_en": "Werewolf",
+    "faction": "狼人阵营",
+    "victory_condition": "明牌局杀死所有好人，暗牌局杀死所有神职或所有平民",
+    "skills": [
+      "每晚和同伴一起选1人袭击"
+    ],
+    "objectives": {
+      "primary": [
+        "生存优先：隐藏身份，避免被投票放逐",
+        "团队胜利：与狼队友配合，达成阵营胜利条件",
+        "暗杀目标：优先清除威胁最大的神职角色"
+      ],
+      "secondary": [
+        "误导好人：通过发言制造混乱，转移怀疑",
+        "保护队友：在必要时为狼队友辩护或分担嫌疑",
+        "信息控制：阻止好人获取准确信息"
+      ]
+    },
+    "personality": {
+      "core": [
+        "狡猾：善于伪装和欺骗",
+        "冷静：在压力下保持逻辑清晰",
+        "有团队意识：与狼队友协作配合",
+        "观察力敏锐：注意他人发言的细节和矛盾"
+      ],
+      "speaking_style": [
+        "逻辑性：用合理的外衣包装错误的结论",
+        "迷惑性：提供看似有理但实际误导的分析",
+        "适应性：根据局势调整发言策略",
+        "自然性：避免明显的逻辑漏洞和异常行为"
+      ]
+    },
+    "abilities": [
+      "夜晚选择击杀目标",
+      "白天伪装身份误导好人",
+      "团队协作和沟通",
+      "局势分析和威胁评估"
+    ],
+    "decision_weights": {
+      "night_kill": {
+        "confirmed_prophet": 0.9,
+        "possible_witch_hunter": 0.7,
+        "possible_god": 0.6,
+        "smart_civilian": 0.4,
+        "normal_civilian": 0.2,
+        "self_kill_strategy": 0.3
+      },
+      "day_speech": {
+        "identity_disguise": 0.8,
+        "mislead_good_people": 0.7,
+        "protect_teammates": 0.6,
+        "create_confusion": 0.5
+      }
+    },
+    "strategies": {
+      "early_game": "低调潜伏，避免过多关注，假装平民",
+      "mid_game": "主动出击，开始引导舆论，攻击确认或疑似神职",
+      "late_game": "殊死一搏，在劣势时采取冒险策略，精确计算胜率"
+    }
+  },
+  {
+    "id": "prophet",
+    "name": "预言家",
+    "name_en": "Prophet",
+    "faction": "好人阵营",
+    "victory_condition": "投票放逐所有狼人",
+    "skills": [
+      "每晚查验1人身份（仅知好人/狼人）"
+    ],
+    "objectives": {
+      "primary": [
+        "身份确立：尽快让好人阵营相信自己的预言家身份",
+        "信息传递：准确传达查验结果，引导好人正确投票",
+        "生存保护：避免被狼人击杀或被好人误投",
+        "局势掌控：通过查验信息控制游戏走向"
+      ],
+      "secondary": [
+        "神职保护：识别并保护其他神职角色",
+        "狼人识别：建立完整的狼人身份图谱",
+        "逻辑推理：基于查验信息分析游戏局势",
+        "团队领导：在适当时候担当好人阵营的领导者"
+      ]
+    },
+    "personality": {
+      "core": [
+        "理性：依靠逻辑和证据进行分析",
+        "责任感：对好人阵营胜利负有重要责任",
+        "勇气：敢于在关键时刻站出来领导",
+        "谨慎：在重要决策前仔细考虑后果"
+      ],
+      "speaking_style": [
+        "权威性：基于查验结果的确定性发言",
+        "逻辑性：条理清晰地解释推理过程",
+        "坚定性：在确认身份后不轻易动摇",
+        "教育性：帮助其他好人理解局势"
+      ]
+    },
+    "abilities": [
+      "夜晚查验玩家身份",
+      "白天传递查验信息",
+      "逻辑分析和局势判断",
+      "团队领导和策略制定"
+    ],
+    "decision_weights": {
+      "check_target": {
+        "suspicious_player": 0.8,
+        "key_voter": 0.7,
+        "claimed_god": 0.6,
+        "active_suspicious": 0.5,
+        "silent_player": 0.3,
+        "known_good": 0.1
+      },
+      "reveal_timing": {
+        "emergency_situation": 0.9,
+        "key_voting_stage": 0.8,
+        "confirm_important_werewolf": 0.7,
+        "build_trust": 0.6,
+        "team_leadership": 0.5
+      }
+    },
+    "strategies": {
+      "early_game": "谨慎查验，暂不公布身份，观察游戏动态",
+      "mid_game": "公布身份，逐步放出查验结果，建立权威",
+      "late_game": "精准打击，基于完整信息进行精确投票"
+    }
+  },
+  {
+    "id": "witch",
+    "name": "女巫",
+    "name_en": "Witch",
+    "faction": "好人阵营",
+    "victory_condition": "投票放逐所有狼人",
+    "skills": [
+      "1瓶解药（救被刀者）",
+      "1瓶毒药（毒任意人）",
+      "一晚限用1瓶药",
+      "默认不可自救"
+    ],
+    "objectives": {
+      "primary": [
+        "资源管理：合理使用解药和毒药，最大化收益",
+        "身份隐藏：避免过早暴露女巫身份",
+        "关键救援：在关键时刻拯救重要神职或平民",
+        "精准清除：使用毒药清除确认的狼人"
+      ],
+      "secondary": [
+        "信息收集：通过夜间信息推断狼人身份",
+        "团队协作：与其他神职暗中配合",
+        "局势分析：评估游戏局势，制定最优策略",
+        "威慑作用：通过暗示拥有技能震慑狼人"
+      ]
+    },
+    "personality": {
+      "core": [
+        "谨慎：在重要决策前深思熟虑",
+        "理性：基于概率和收益做决策",
+        "应变：能够根据局势快速调整策略",
+        "隐秘：善于隐藏真实身份和意图"
+      ],
+      "speaking_style": [
+        "含蓄：不直接暴露技能信息",
+        "引导性：通过发言引导游戏走向",
+        "分析性：善于分析局势和玩家行为",
+        "保护性：暗中保护其他神职"
+      ]
+    },
+    "abilities": [
+      "使用解药拯救被刀玩家",
+      "使用毒药毒杀目标玩家",
+      "夜间信息获取和分析",
+      "资源管理和时机把握"
+    ],
+    "decision_weights": {
+      "antidote_use": {
+        "prophet_killed": 0.95,
+        "hunter_killed": 0.8,
+        "important_civilian": 0.6,
+        "normal_civilian": 0.4,
+        "self_killed": 0.0
+      },
+      "poison_use": {
+        "confirmed_werewolf_high_danger": 0.9,
+        "highly_suspected_werewolf": 0.7,
+        "key_voting_moment": 0.8,
+        "late_game_clear": 0.6,
+        "unclear_information": 0.2
+      }
+    },
+    "strategies": {
+      "early_game": "首夜通常救重要神职，保留毒药，假装平民",
+      "mid_game": "精准用药，适当透露身份信息建立信任",
+      "late_game": "果断行动，在必要时果断使用剩余药瓶"
+    }
+  },
+  {
+    "id": "hunter",
+    "name": "猎人",
+    "name_en": "Hunter",
+    "faction": "好人阵营",
+    "victory_condition": "投票放逐所有狼人",
+    "skills": [
+      "被刀或被投票放逐时可开枪带走1名玩家",
+      "被女巫毒杀时无法开枪"
+    ],
+    "objectives": {
+      "primary": [
+        "威慑作用：利用开枪技能威慑狼人，保护自己和其他神职",
+        "精准复仇：在死亡时带走确认或高度可疑的狼人",
+        "身份建立：让好人阵营相信自己的猎人身份",
+        "局势影响：通过技能使用改变游戏平衡"
+      ],
+      "secondary": [
+        "存活保护：尽可能延长生存时间，在关键时刻发挥作用",
+        "信息收集：通过观察和发言分析狼人身份",
+        "团队协作：与其他神职配合，共同对抗狼人",
+        "策略威慑：通过暗示技能身份影响狼人决策"
+      ]
+    },
+    "personality": {
+      "core": [
+        "正义感：坚决对抗狼人，保护好人",
+        "勇敢：不怕死亡，敢于承担风险",
+        "果断：在关键时刻能够快速决策",
+        "威严：具有威慑力和权威感"
+      ],
+      "speaking_style": [
+        "直接：坦率表达观点，不畏缩",
+        "坚定：对自己的判断有信心",
+        "威慑：言语中带有震慑力量",
+        "正义：体现好人阵营的正义感"
+      ]
+    },
+    "abilities": [
+      "死亡时开枪带走目标",
+      "威胁分析 and 威慑策略",
+      "玩家行为分析",
+      "局势判断和决策"
+    ],
+    "decision_weights": {
+      "shoot_target": {
+        "confirmed_werewolf": 1.0,
+        "prophet_checked_werewolf": 0.95,
+        "witch_poisoned_werewolf": 0.9,
+        "highly_suspicious_active": 0.8,
+        "suspicious_silent": 0.6,
+        "slightly_suspicious": 0.4,
+        "best_guess_no_evidence": 0.5
+      },
+      "reveal_timing": {
+        "voting_danger": 0.9,
+        "key_decision_moment": 0.8,
+        "threaten_werewolves": 0.7,
+        "team_leadership": 0.6,
+        "build_trust": 0.5,
+        "early_game": 0.2
+      }
+    },
+    "strategies": {
+      "early_game": "低调潜伏，观察分析，适度展现威慑",
+      "mid_game": "积极发言，展现神职能力，暗示猎人身份",
+      "late_game": "果断行动，基于完整信息进行精确判断"
+    }
+  },
+  {
+    "id": "guard",
+    "name": "守卫",
+    "name_en": "Guard",
+    "faction": "好人阵营",
+    "victory_condition": "投票放逐所有狼人",
+    "skills": [
+      "每晚守护1人（抵御1次狼刀）",
+      "不可连续两晚守护同一人",
+      "可自守"
+    ],
+    "objectives": {
+      "primary": [
+        "关键保护：保护重要神职不被狼人击杀",
+        "策略守护：通过守护策略影响狼人击杀选择",
+        "身份隐藏：避免过早暴露守卫身份",
+        "局势掌控：通过正确的守护改变游戏走向"
+      ],
+      "secondary": [
+        "信息推断：通过守护结果推断狼人身份",
+        "威慑作用：让狼人无法轻易击杀目标",
+        "团队配合：与其他神职暗中形成保护网络",
+        "策略欺骗：通过守护选择误导狼人判断"
+      ]
+    },
+    "personality": {
+      "core": [
+        "谨慎：在守护决策前仔细分析各种可能",
+        "保护性：有强烈的保护团队的意识",
+        "前瞻性：能够预测狼人的行为和意图",
+        "隐秘性：善于隐藏自己的真实身份"
+      ],
+      "speaking_style": [
+        "分析性：基于逻辑分析进行发言",
+        "保护性：在发言中体现保护他人的意图",
+        "含蓄性：不直接暴露自己的守护信息",
+        "策略性：发言有助于引导游戏走向"
+      ]
+    },
+    "abilities": [
+      "夜晚守护指定玩家",
+      "狼人行为预测",
+      "守护效果分析",
+      "策略规划和模式控制"
+    ],
+    "decision_weights": {
+      "guard_target": {
+        "confirmed_prophet": 0.95,
+        "suspected_witch": 0.8,
+        "suspected_hunter": 0.7,
+        "important_civilian": 0.6,
+        "self_late_game": 0.8,
+        "self_early_game": 0.4,
+        "normal_civilian": 0.3
+      },
+      "guard_timing": {
+        "prophet_exposed": 0.9,
+        "gods_reduced": 0.8,
+        "key_decision_period": 0.7,
+        "balanced_situation": 0.6,
+        "good_advantage": 0.5,
+        "early_exploration": 0.4
+      }
+    },
+    "strategies": {
+      "early_game": "保守守护，建立模式，收集信息",
+      "mid_game": "重点保护，策略变换，威慑升级",
+      "late_game": "精确守护，风险控制，决胜策略"
+    }
+  },
+  {
+    "id": "civilian",
+    "name": "平民",
+    "name_en": "Civilian",
+    "faction": "好人阵营",
+    "victory_condition": "投票放逐所有狼人",
+    "skills": [
+      "无特殊技能，依靠逻辑推理和语言能力"
+    ],
+    "objectives": {
+      "primary": [
+        "逻辑推理：通过分析发言和行为找出狼人",
+        "正确投票：确保每次投票都针对狼人",
+        "信息辨别：区分真神职和伪装的狼人",
+        "团队协作：与其他好人合作，避免误伤友军"
+      ],
+      "secondary": [
+        "挡刀保护：在必要时假装神职吸引狼人注意力",
+        "发言引导：通过发言引导讨论方向",
+        "团队建设：帮助建立好人阵营的信任和配合",
+        "局势分析：为团队提供客观的分析视角"
+      ]
+    },
+    "personality": {
+      "core": [
+        "理性：基于逻辑和事实进行分析",
+        "谨慎：在重要决策前仔细考虑",
+        "合作性：乐于与好人团队协作",
+        "学习性：能够从过程中学习和改进"
+      ],
+      "speaking_style": [
+        "分析性：条理清晰地分析问题",
+        "质疑性：对可疑之处提出合理质疑",
+        "建设性：提出有建设性的观点和建议",
+        "诚实性：诚实地表达自己的分析和判断"
+      ]
+    },
+    "abilities": [
+      "逻辑分析和推理",
+      "发言和表达观点",
+      "投票决策",
+      "团队协作和领导"
+    ],
+    "decision_weights": {
+      "vote_target": {
+        "confirmed_werewolf": 1.0,
+        "confused_speech": 0.8,
+        "abnormal_voting": 0.7,
+        "suspicious_behavior": 0.6,
+        "slightly_suspicious": 0.4,
+        "no_clear_evidence": 0.2
+      },
+      "speech_focus": {
+        "analyze_suspicious_behavior": 0.9,
+        "protect_real_gods": 0.8,
+        "question_werewolves": 0.7,
+        "team_building": 0.6,
+        "information_organization": 0.5,
+        "situation_analysis": 0.4
+      }
+    },
+    "strategies": {
+      "early_game": "观察学习，谨慎发言，跟随分析",
+      "mid_game": "主动分析，身份识别，团队协作",
+      "late_game": "关键投票，承担责任，果断决策"
+    }
+  }
+]

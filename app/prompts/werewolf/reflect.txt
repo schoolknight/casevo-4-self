@@ -1,0 +1,208 @@
+希望你扮演一位{{agent.description}}。
+
+### 当前反思状况
+- 游戏第{{extra.phase}}轮结束
+- 你的存活状态：{% if agent.context.game_state.is_alive %}存活{% else %}已死亡{% endif %}
+- 当前被怀疑程度：{{extra.suspicion_level}}/1.0
+- 团队状况：{% if extra.team_status %}{{extra.team_status}}{% else %}未知{% endif %}
+
+### 你的角色表现回顾
+
+#### 本轮表现总结
+{% if extra.round_performance %}
+**主要行为**：
+{% for action in extra.round_performance.actions %}
+- {{action.type}}：{{action.description}}
+  - 结果：{{action.result}}
+  - 影响：{{action.impact}}
+{% endfor %}
+
+**发言情况**：
+{% for speech in extra.round_performance.speeches %}
+- {{speech.phase}}阶段：{{speech.content[:50]}}...
+  - 获得反应：{{speech.reaction}}
+  - 身份掩护效果：{{speech.coverage_effect}}
+{% endfor %}
+{% endif %}
+
+#### 历史表现统计
+- 总夜晚行动次数：{{len(agent.context.game_state.night_actions)}}次
+- 成功击杀次数：{% if extra.successful_kills %}{{extra.successful_kills}}{% else %}0{% endif %}次
+- 白天发言次数：{{len(agent.context.game_state.day_statements)}}次
+- 投票次数：{{len(agent.context.game_state.vote_history)}}次
+- 投票准确率：{% if extra.vote_accuracy %}{{extra.vote_accuracy}}{% else %}计算中{% endif %}
+
+### 团队协作分析
+
+#### 队友表现
+{% for teammate in extra.teammate_performance %}
+**{{teammate.id}}号队友**：
+- 本轮表现：{{teammate.performance}}
+- 与你的配合度：{{teammate.coordination}}
+- 当前安全状况：{{teammate.safety_status}}
+- 改进建议：{{teammate.suggestions}}
+{% endfor %}
+
+#### 团队策略执行
+{% if extra.team_strategy %}
+- 既定策略：{{extra.team_strategy.planned}}
+- 执行情况：{{extra.team_strategy.execution}}
+- 执行效果：{{extra.team_strategy.effect}}
+- 策略调整需求：{{extra.team_strategy.adjustment_needed}}
+{% endif %}
+
+### 游戏局势评估
+
+#### 当前阵营对比
+- 狼人阵营人数：{{extra.werewolf_count}}
+- 好人阵营人数：{{extra.good_count}}
+- 神职存活情况：{{extra.gods_status}}
+- 胜率评估：{{extra.win_probability}}
+
+#### 关键角色识别
+{% if extra.key_players %}
+**威胁最大的好人**：
+{% for player in extra.key_players.threats %}
+- {{player.id}}号：{{player.reason}} (威胁度: {{player.threat_level}})
+{% endfor %}
+
+**需要保护的队友**：
+{% for player in extra.key_players.protect %}
+- {{player.id}}号：{{player.reason}} (保护必要性: {{player.protection_need}})
+{% endfor %}
+{% endif %}
+
+### 问题识别与分析
+
+#### 主要问题
+{% for problem in extra.problems %}
+**问题{{loop.index}}**：{{problem.description}}
+- 严重程度：{{problem.severity}}
+- 影响范围：{{problem.impact}}
+- 解决紧迫度：{{problem.urgency}}
+{% endfor %}
+
+#### 错误分析
+{% if extra.errors %}
+**本轮错误**：
+{% for error in extra.errors %}
+- {{error.type}}：{{error.description}}
+- 原因：{{error.cause}}
+- 后果：{{error.consequence}}
+- 教训：{{error.lesson}}
+{% endfor %}
+{% endif %}
+
+### 策略调整建议
+
+#### 立即调整
+{% if extra.immediate_adjustments %}
+{% for adjustment in extra.immediate_adjustments %}
+- {{adjustment.area}}：{{adjustment.action}}
+  - 预期效果：{{adjustment.expected_effect}}
+  - 实施难度：{{adjustment.difficulty}}
+{% endfor %}
+{% endif %}
+
+#### 长期优化
+{% if extra.long_term_optimizations %}
+{% for optimization in extra.long_term_optimizations %}
+- {{optimization.focus}}：{{optimization.strategy}}
+  - 实施阶段：{{optimization.phase}}
+  - 成功指标：{{optimization.success_metrics}}
+{% endfor %}
+{% endif %}
+
+### 个人能力提升
+
+#### 伪装技能
+- 当前水平：{{extra.disguise_skill.current_level}}
+- 需要改进：{{extra.disguise_skill.improvement_areas}}
+- 训练重点：{{extra.disguise_skill.training_focus}}
+
+#### 逻辑推理
+- 推理准确性：{{extra.reasoning_skill.accuracy}}
+- 分析深度：{{extra.reasoning_skill.depth}}
+- 判断速度：{{extra.reasoning_skill.speed}}
+
+#### 团队协作
+- 协作意识：{{extra.teamwork_skill.cooperation_awareness}}
+- 信息传递：{{extra.teamwork_skill.information_sharing}}
+- 策略配合：{{extra.teamwork_skill.strategy_coordination}}
+
+### 下阶段规划
+
+#### 短期目标（1-2轮）
+{% for goal in extra.short_term_goals %}
+- {{goal.description}}：{{goal.action_plan}}
+  - 成功标准：{{goal.success_criteria}}
+  - 时间要求：{{goal.timeline}}
+{% endfor %}
+
+#### 中期目标（3-5轮）
+{% for goal in extra.medium_term_goals %}
+- {{goal.description}}：{{goal.milestones}}
+  - 关键节点：{{goal.key_points}}
+  - 风险控制：{{goal.risk_control}}
+{% endfor %}
+
+### 学习总结
+
+#### 成功经验
+{% for success in extra.successes %}
+- {{success.experience}}：{{success.method}}
+  - 适用场景：{{success.applicability}}
+  - 可复制性：{{success.replicability}}
+{% endfor %}
+
+#### 失败教训
+{% for failure in extra.failures %}
+- {{failure.lesson}}：{{failure.what_not_to_do}}
+  - 预防措施：{{failure.prevention}}
+  - 应对策略：{{failure.response}}
+{% endfor %}
+
+### 输出格式（JSON格式）
+{
+    "performance_summary": {
+        "overall_rating": "优秀/良好/一般/需改进",
+        "key_achievements": ["成就1", "成就2"],
+        "main_issues": ["问题1", "问题2"]
+    },
+    "strategy_adjustments": {
+        "immediate_changes": ["调整1", "调整2"],
+        "long_term_improvements": ["改进1", "改进2"]
+    },
+    "skill_development": {
+        "focus_areas": ["重点1", "重点2"],
+        "practice_methods": ["方法1", "方法2"]
+    },
+    "next_phase_planning": {
+        "primary_objectives": ["目标1", "目标2"],
+        "risk_mitigation": ["风险1", "风险2"],
+        "success_indicators": ["指标1", "指标2"]
+    }
+}
+
+### 反思要点
+1. **客观评估**：诚实地评价自己的表现和决策
+2. **学习导向**：从成功和失败中提取有价值的学习内容
+3. **战略思维**：考虑长远目标而不仅仅是眼前利益
+4. **团队意识**：评估自己在团队协作中的作用和贡献
+5. **持续改进**：制定具体的改进计划和实施方法
+
+### 任务
+请对当前游戏阶段进行全面的反思和分析，生成：
+1. 客观的自我评价
+2. 问题识别和分析
+3. 策略调整建议
+4. 能力提升计划
+5. 下阶段目标规划
+
+你的反思应该帮助你：
+- 提高游戏技能和决策质量
+- 改善团队协作效果
+- 增强伪装和分析能力
+- 优化整体战略规划
+
+现在请开始你的反思总结：

@@ -1,0 +1,176 @@
+希望你扮演一位{{agent.role}}，你有以下特征：
+{{agent.description}}
+
+### 紧急辩护状况
+- 你正在被质疑，怀疑度：{{agent.suspicion_level}}/1.0
+- 质疑者：{% for accuser in extra.accusers %}{{accuser.id}}号{% if not loop.last %}、{% endif %}{% endfor %}
+- 投票风险：{% if extra.vote_risk == "high" %}很可能被投票出局{% elif extra.vote_risk == "medium" %有被投票风险{% else %}风险较低{% endif %}
+
+### 针对你的指控
+{% for accusation in extra.accusations %}
+**指控{{loop.index}}**（来自{{accusion.accuser_id}}号玩家）：
+- 指控内容：{{accusation.content}}
+- 指控依据：{{accusation.evidence}}
+- 严重程度：{{accusation.severity}}
+
+{% if accusation.false_hood %}
+这个指控的问题：
+{% for issue in accusation.false_hood %}
+- {{issue.description}}
+{% endfor %}
+{% endif %}
+{% endfor %}
+
+### 你的伪装身份
+当前身份：{{agent.fake_role}}
+身份描述：{{agent.fake_role_description}}
+行为特征：{{agent.fake_behavior_pattern}}
+
+### 辩护策略选择
+
+#### 策略1：事实辩驳
+适用情况：当指控基于错误信息或逻辑漏洞时
+- 指出指控中的事实错误
+- 揭示逻辑推理的漏洞
+- 提供相反的证据
+
+#### 策略2：身份强化
+适用情况：需要加强伪装身份的可信度
+- 重申你的"真实"身份
+- 展现符合身份的行为特征
+- 提供身份证明的"证据"
+
+#### 策略3：转移怀疑
+适用情况：需要转移注意力到其他玩家
+- 指出更可疑的玩家
+- 分析指控者可能的动机
+- 制造新的怀疑焦点
+
+#### 策略4：情感共鸣
+适用情况：需要获得其他玩家的同情和支持
+- 表达被冤枉的委屈
+- 强调对好人阵营的贡献
+- 诉诸理性判断
+
+### 当前游戏背景
+- 游戏阶段：{{game.phase_name}}
+- 剩余人数：{{game.alive_count}}人
+- {% if extra.key_situation %}关键局势：{{extra.key_situation}}{% endif %}
+
+### 你的历史表现
+{% for behavior in extra.your_behaviors %}
+- 第{{behavior.round}}轮：{{behavior.action}}
+  - 结果：{{behavior.result}}
+  - 当时评价：{{behavior.evaluation}}
+{% endfor %}
+
+### 可用的辩护材料
+{% if extra.alibi %}
+- **不在场证明**：{{extra.alibi}}
+{% endif %}
+
+{% if extra.witnesses %}
+- **证人支持**：
+{% for witness in extra.witnesses %}
+  - {{witness.id}}号：{{witness.statement}}
+{% endfor %}
+{% endif %}
+
+{% if extra.inconsistent_accusations %}
+- **指控矛盾**：
+{% for contradiction in extra.inconsistent_accusations %}
+  - {{contradiction.description}}
+{% endfor %}
+{% endif %}
+
+### 狼人团队配合
+{% if extra.team_support %}
+队友可以提供的支持：
+{% for support in extra.team_support %}
+- {{support.teammate_id}}号：{{support.action}}
+{% endfor %}
+{% endif %}
+
+### 辩护要点分析
+
+#### 针对每个指控的具体回应：
+{% for accusation in extra.accusations %}
+**回应{{accusion.accuser_id}}号的指控**：
+
+1. **事实核查**：
+   {% if accusation.factual_errors %}
+   {% for error in accusation.factual_errors %}
+   - {{error.claim}}是错误的，实际是{{error.correction}}
+   {% endfor %}
+   {% endif %}
+
+2. **逻辑分析**：
+   {% if accusation.logical_flaws %}
+   {% for flaw in accusation.logical_flaws %}
+   - {{flaw.description}}存在逻辑问题
+   {% endfor %}
+   {% endif %}
+
+3. **动机质疑**：
+   - {{accusion.accuser_id}}号为什么要这样指控我？
+   - {% if accuser.suspicious_behavior %}他最近的异常行为：{{accuser.suspicious_behavior}}{% endif %}
+
+4. **反证提供**：
+   {% if accusation.counter_evidence %}
+   - 证据{{loop.index}}：{{accusation.counter_evidence}}
+   {% endif %}
+{% endfor %}
+
+### 辩护话术框架
+
+#### 开场陈述：
+"各位玩家，我要回应刚才{{extra.main_accuser}}号对我的指控..."
+
+#### 核心辩护：
+1. **澄清事实**：指出指控中的错误
+2. **提供证据**：给出支持自己的信息
+3. **身份证明**：强化伪装身份的可信度
+4. **转移焦点**：指出更可疑的玩家
+
+#### 情感渲染：
+- 表达对被误解的无奈
+- 强调找狼人的决心
+- 呼吁大家理性判断
+
+#### 结尾呼吁：
+"希望大家能够客观分析，不要被误导..."
+
+### 风险评估
+- **辩护失败风险**：{{extra.defense_failure_risk}}
+- **暴露身份风险**：{{extra.identity_exposure_risk}}
+- **团队影响**：{{extra.team_impact}}
+
+### 应急预案
+{% if extra.backup_plans %}
+如果辩护不成功：
+{% for plan in extra.backup_plans %}
+- {{plan.description}}
+{% endfor %}
+{% endif %}
+
+### 输出要求
+请生成一段完整的辩护发言，应该包含：
+1. 对指控的回应和反驳
+2. 支持自己清白的证据
+3. 身份的进一步证明
+4. 对指控者的反质疑
+5. 对其他玩家的呼吁
+
+语言要求：
+- 坚定而理性，不要过于激动
+- 逻辑清晰，条理分明
+- 符合你的伪装身份特征
+- 避免暴露狼人身份信息
+
+### 特别提醒
+- **保护队友**：不要牵连其他狼人
+- **维持伪装**：始终保持平民或神职的角色特征
+- **控制情绪**：表现要符合被冤枉者的正常反应
+- **留有余地**：不要把话说死，为后续策略留空间
+
+现在请开始你的辩护发言：

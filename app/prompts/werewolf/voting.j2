@@ -1,0 +1,195 @@
+希望你扮演一位{{agent.role}}，你有以下特征：
+{{agent.description}}
+
+### 投票阶段状况
+- 当前投票：第{{game.voting_round}}轮投票
+- 投票原因：{{game.voting_reason}}
+- 剩余存活：{{game.alive_count}}人
+- 投票紧急度：{% if game.urgent_vote %}紧急投票{% else %}常规投票{% endif %}
+
+### 投票候选人
+{% for candidate in game.vote_candidates %}
+**{{candidate.id}}号玩家**：
+- 当前得票：{{candidate.current_votes}}票
+- 被怀疑原因：{{candidate.suspicion_reason}}
+- 身份推测：{% if candidate.role_guess %}{{candidate.role_guess}}{% else %}未知{% endif %}
+{% if candidate.defense_statement %}
+- 辩护发言：{{candidate.defense_statement}}
+{% endif %}
+- {% if candidate.is_teammate %}[注意：这是你的狼队友]{% endif %}
+{% endfor %}
+
+{% if extra.previous_votes %}
+### 历史投票分析
+{% for vote in extra.previous_votes %}
+- 第{{vote.round}}轮：你投票给{{vote.target_id}}号（{{vote.reason}}）
+  - 结果：{% if vote.correct %}正确{% else %}错误{% endif %}，{% if vote.target_died %}目标死亡{% else %}目标存活{% endif %}
+{% endfor %}
+{% endif %}
+
+### 当前局势分析
+- **狼人优势**：{% if game.werewolf_advantage %}狼人阵营占优{% else %}好人阵营占优{% endif %}
+- **关键角色**：{% if extra.key_roles_info %}
+{% for role in extra.key_roles_info %}
+- {{role.role_type}}：{% if role.confirmed %}{{role.player_id}}号已确认{% else %}未确认{% endif %}
+{% endfor %}
+{% endif %}
+
+{% if extra.urgent_factors %}
+### 紧急因素
+{% for factor in extra.urgent_factors %}
+- {{factor.description}}（影响程度：{{factor.impact}}）
+{% endfor %}
+{% endif %}
+
+### 投票策略框架
+
+#### 策略1：保护队友
+- 当狼队友被投票时，投票给其他人
+- 选择最可疑的好人或威胁最小的候选人
+- 避免明显的跟票保护
+
+#### 策略2：清除威胁
+- 投票给对狼人威胁最大的角色
+- 优先投票给确认或疑似神职
+- 考虑投票对局势的长远影响
+
+#### 策略3：隐藏身份
+- 投票给行为确实可疑的人
+- 避免投票给明显的好人
+- 保持投票逻辑的一致性
+
+#### 策略4：制造混乱
+- 在关键时候制造平票
+- 投票给意想不到的目标
+- 影响其他玩家的判断
+
+### 候选人深度分析
+{% for candidate in game.vote_candidates %}
+**{{candidate.id}}号玩家详细分析**：
+
+**支持投票的理由**：
+{% if candidate.voting_reasons.pro %}
+{% for reason in candidate.voting_reasons.pro %}
+- {{reason.description}}（权重：{{reason.weight}})
+{% endfor %}
+{% endif %}
+
+**反对投票的理由**：
+{% if candidate.voting_reasons.con %}
+{% for reason in candidate.voting_reasons.con %}
+- {{reason.description}}（权重：{{reason.weight}})
+{% endfor %}
+{% endif %}
+
+**投票风险评估**：
+- 投票成功概率：{{candidate.vote_success_prob}}
+- 暴露风险：{{candidate.exposure_risk}}
+- 团队影响：{{candidate.team_impact}}
+
+{% if candidate.is_teammate %}
+**特殊考虑**：
+- 这是你的狼队友，需要保护
+- 保护方式：{{candidate.protection_method}}
+{% endif %}
+{% endfor %}
+
+### 你的投票记录
+- 总投票次数：{{agent.total_votes}}
+- 投票准确率：{{agent.vote_accuracy}}%
+- 最近5次投票：{% for vote in agent.recent_votes[-5:] %}{{vote.target_id}}号{% if not loop.last %}、{% endif %}{% endfor %}
+
+### 团队投票协调
+{% if extra.team_voting_plan %}
+**狼团队投票计划**：
+- 主要目标：{{extra.team_voting_plan.primary_target}}
+- 分票策略：{% for strategy in extra.team_voting_plan.split_votes %}
+  - {{strategy.teammate_id}}号投票给{{strategy.target_id}}号
+{% endfor %}
+- 紧急预案：{{extra.team_voting_plan.backup_plan}}
+{% endif %}
+
+### 投票逻辑推理
+
+#### 第一步：评估威胁等级
+1. **身份威胁**：候选人的角色对狼人的威胁程度
+2. **技能威胁**：候选人可能拥有的技能及其危险度
+3. **影响力威胁**：候选人在玩家中的影响力
+
+#### 第二步：计算投票收益
+1. **直接收益**：清除该候选人能获得的好处
+2. **间接收益**：对局势控制和信息获取的影响
+3. **长期收益**：对后续游戏进程的帮助
+
+#### 第三步：评估风险成本
+1. **暴露风险**：投票该目标是否会暴露狼人身份
+2. **团队损失**：如果判断错误的损失
+3. **信誉损失**：对个人"好人"形象的影响
+
+#### 第四步：考虑团队协调
+1. **队友配合**：与狼队友投票的一致性
+2. **保护需要**：是否有队友需要保护
+3. **策略执行**：团队整体策略的执行
+
+### 输出格式（JSON格式）
+{
+    "vote_target": <你选择投票的玩家ID>,
+    "primary_reason": <主要投票理由>,
+    "secondary_reasons": [<次要理由1>, <次要理由2>],
+    "risk_assessment": {
+        "exposure_risk": "高/中/低",
+        "team_impact": "正面/中性/负面",
+        "success_probability": <投票成功概率>
+    },
+    "strategic_consideration": <战略层面的考虑>,
+    "backup_choice": <如果首选目标不可行的备选>,
+    "team_coordination": <与团队投票协调的说明>
+}
+
+### 特殊情况处理
+
+#### 情况1：狼队友被投票
+- 优先考虑保护队友
+- 选择第二可疑的目标
+- 避免明显的保护行为
+
+#### 情况2：关键神职候选人
+- 评估神职确认程度
+- 考虑投票的时机
+- 权衡风险和收益
+
+#### 情况3：平票处理
+- 分析平票对局势的影响
+- 考虑重新投票的可能性
+- 选择最有利的平票对象
+
+#### 情况4：最后关头
+- 考虑胜负的决定性影响
+- 可能需要冒险投票
+- 优先保证团队胜利
+
+### 投票表达模板
+
+#### 投票前声明：
+"经过仔细分析，我认为应该投票给..."
+
+#### 投票理由：
+"我的理由是：1)... 2)... 3)..."
+
+#### 呼吁其他玩家：
+"希望大家能够理性分析，跟我一起投票..."
+
+### 注意事项
+- **保持一致**：投票理由要与之前的发言保持一致
+- **避免明显**：不要暴露狼人的特殊信息
+- **保护队友**：在保护队友时要注意方式方法
+- **灵活应变**：根据实际情况调整投票策略
+
+### 任务
+请根据当前的候选人情况、游戏局势和团队策略，做出最优的投票决定。你的投票应该：
+1. 符合狼人团队的整体利益
+2. 不暴露你的狼人身份
+3. 考虑长远的战略布局
+4. 与队友保持适当协调
+
+现在请做出你的投票决定：
