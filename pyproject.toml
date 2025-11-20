@@ -8,6 +8,10 @@ authors = [
 dependencies = [
     "mesa==2.4.0",
     "chromadb>=0.5.0",
+    "zai-sdk>=0.0.4.2",
+    "openai>=2.7.2",
+    "pytest>=7.0.0",
+    "pytest-mock>=3.10.0",
 ]
 requires-python = ">=3.11"
 readme = "README.md"
@@ -16,3 +20,16 @@ license = {text = "MIT"}
 
 [tool.pdm]
 distribution = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.pdm.scripts]
+test = "pytest tests/ -v"
+test-chatgpt = "pytest tests/test_chatgpt.py -v"
+test-chatglm = "pytest tests/test_chatglm.py -v"
+test-config = "pytest tests/test_config.py -v"
+example = "python app/llm/example.py"
+
+

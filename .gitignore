@@ -1,7 +1,12 @@
+.pdm-python
+.python-version
+pdm.lock
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+
+app/llm/config.py
 
 # C extensions
 *.so
