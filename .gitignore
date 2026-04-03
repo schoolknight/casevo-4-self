@@ -8,6 +8,10 @@ CLAUDE.md
 .spec-workflow/
 .task_prompt/
 
+pdm.lock
+
+.pdm-python
+
 # C extensions
 *.so
 
