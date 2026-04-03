@@ -6,6 +6,7 @@ __pycache__/
 CLAUDE.md
 .claude/
 .spec-workflow/
+.task_prompt/
 
 # C extensions
 *.so
