@@ -16,7 +16,7 @@ class RequestCache(object):
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 request_hash VARCHAR(70),
                 request_content TEXT,
-                response_content TEXT,
+                response_content TEXT  -- 修复：删除末尾多余逗号（原为 response_content TEXT,）
             );
         """)
         self.db_conn.commit()
