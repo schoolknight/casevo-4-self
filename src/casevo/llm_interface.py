@@ -43,7 +43,6 @@ class LLM_INTERFACE(metaclass=ABCMeta):
         """
         pass
 
-    @abstractmethod
     def send_message_by_config(
         self, prompt, llm_config: LLMConfig, json_flag: bool = False
     ):
@@ -58,7 +57,7 @@ class LLM_INTERFACE(metaclass=ABCMeta):
         Returns:
             str: 模型返回的文本响应。
         """
-        pass
+        raise NotImplementedError("send_message_by_config not implemented")
 
     @abstractmethod
     def send_embedding(self, text_list):
