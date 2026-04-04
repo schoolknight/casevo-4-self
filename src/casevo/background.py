@@ -2,6 +2,7 @@ from casevo.base_component import BaseAgentComponent, BaseModelComponent
 import chromadb
 from casevo.llm_interface import LLM_INTERFACE
 from typing import List,Optional
+import threading
 
 class BackgroundItem:
     id = -1
@@ -71,7 +72,7 @@ class Background(BaseAgentComponent):
                 cur_extra = extra_list[i]
             add_list.append(BackgroundItem(self.agent.component_id, cur_type, content_list[i], cur_extra))
         
-        return self.background_factory.__add_short_memory__(add_list)
+        return self.background_factory.__add_backgrounds__(add_list)
 
     def search_short_memory_by_doc(self, content_list:List[str]):
         """
@@ -119,6 +120,7 @@ class BackgroundFactory(BaseModelComponent):
         
         self.background_collection = self.client.get_or_create_collection("background", embedding_function= self.llm.get_lang_embedding())
         self.background_num = background_num
+        self.lock = threading.Lock()
         #self.reflact_prompt = prompt
 
         
@@ -150,13 +152,12 @@ class BackgroundFactory(BaseModelComponent):
         :return: 添加操作是否成功的布尔值。
         """
         # 记录开始位置，用于后续计算新增记忆项的数量。
-        self.lock.acquire()
-        start_pos = self.background_collection.count()
-        # 将目标记忆项转换为统一的列表格式，准备添加到记忆集合中。
-        content_list, meta_list, id_list = BackgroundItem.toList(tar_memory, start_pos)
-        # 实际添加记忆项到记忆集合中，并返回操作是否成功。
-        res = self.background_collection.add(documents=content_list, metadatas=meta_list, ids=id_list)
-        self.lock.release() 
+        with self.lock:
+            start_pos = self.background_collection.count()
+            # 将目标记忆项转换为统一的列表格式，准备添加到记忆集合中。
+            content_list, meta_list, id_list = BackgroundItem.toList(tar_memory, start_pos)
+            # 实际添加记忆项到记忆集合中，并返回操作是否成功。
+            res = self.background_collection.add(documents=content_list, metadatas=meta_list, ids=id_list)
         return res
     
     def __search_background__(self, content_list:List[str], tar_agent):
@@ -174,13 +175,12 @@ class BackgroundFactory(BaseModelComponent):
         查询结果列表，包含与内容列表匹配且与目标代理相关的记忆条目。
         """
         # 根据内容列表和查询条件在记忆库中查询相关信息
-        self.lock.acquire()
-        res = self.background_collection.query(
-            query_texts=content_list,
-            n_results=self.background_num,
-            where={"owner_id": tar_agent}
-        )
-        self.lock.release()
+        with self.lock:
+            res = self.background_collection.query(
+                query_texts=content_list,
+                n_results=self.background_num,
+                where={"owner_id": tar_agent}
+            )
         return res.documents
     
     
