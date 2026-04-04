@@ -9,7 +9,7 @@ CLAUDE.md
 .task_prompt/
 
 pdm.lock
-
+.temp
 .pdm-python
 
 # C extensions
