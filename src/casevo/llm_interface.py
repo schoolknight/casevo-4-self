@@ -82,7 +82,6 @@ class LLM_INTERFACE(metaclass=ABCMeta):
         """
         pass
 
-    @abstractmethod
     def send_message_with_tools(
         self,
         prompt: List[Dict[str, Any]],
@@ -102,4 +101,4 @@ class LLM_INTERFACE(metaclass=ABCMeta):
         Returns:
             模型的工具调用响应或文本响应（具体类型由子类实现决定）。
         """
-        pass
+        raise NotImplementedError("send_message_with_tools not implemented")
