@@ -7,6 +7,7 @@ from casevo.llm_interface import LLM_INTERFACE
 from casevo.base_component import BaseAgentComponent, BaseModelComponent
 from casevo.chain import ThoughtChain, BaseStep, ChoiceStep, ScoreStep, JsonStep
 from casevo.prompt import Prompt, PromptFactory
+from casevo.llm import OpenAI_LLM, GLM_LLM
 from casevo.util.log import MesaLog
 from casevo.util.thread_send import ThreadSend
 from casevo.util.tot_log import TotLog
@@ -33,6 +34,7 @@ __all__ = [
     "BaseAgentComponent", "BaseModelComponent",
     "ThoughtChain", "BaseStep", "ChoiceStep", "ScoreStep", "JsonStep",
     "Prompt", "PromptFactory",
+    "OpenAI_LLM", "GLM_LLM",
     "MesaLog",
     "ThreadSend",
     "TotLog",
@@ -49,5 +51,4 @@ __all__ = [
     "AsyncLLMInterface",
     "AsyncLLMConfig",
 ]
-
 

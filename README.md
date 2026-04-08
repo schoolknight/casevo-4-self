@@ -609,7 +609,42 @@ The `model_base.py` module defines a model class `ModelBase` based on the Mesa f
 
 The `TotLog` class is used for **recording and managing log data**, supporting the saving of log information to a file and managing time offsets. This class provides functionality for adding logs, setting logs, and writing logs to a file.
 
-## 6 Acknowledgement
+## 6. LLM 快速接入
+
+Casevo 提供了开箱即用的 OpenAI/GLM 适配实现，位于 `casevo.llm`：
+
+```python
+from casevo.llm import OpenAI_LLM, GLM_LLM
+from casevo.llm_interface import LLMConfig
+
+# OpenAI（支持自定义 base_url，兼容 vLLM / Ollama 等 OpenAI 端点）
+openai_llm = OpenAI_LLM(
+    api_key="YOUR_OPENAI_KEY",
+    base_url="http://localhost:8000/v1",
+    default_model="gpt-4o",
+)
+print(openai_llm.send_message("请用一句话介绍 Casevo"))
+
+cfg = LLMConfig(system="你是严谨的技术助手", model="gpt-4.1-mini", temperature=0.2, max_tokens=128)
+print(openai_llm.send_message_by_config("输出 JSON: {name, version}", cfg, json_flag=True))
+
+# GLM（默认智谱 OpenAI 兼容端点）
+glm_llm = GLM_LLM(api_key="YOUR_GLM_KEY", default_model="glm-4")
+print(glm_llm.send_message("你好，给我一个简短问候"))
+
+# Embedding（返回 List[List[float]]）
+embeddings = openai_llm.send_embedding(["hello", "casevo"])
+print(len(embeddings), len(embeddings[0]))
+```
+
+建议安装：
+
+```bash
+pdm add openai
+pdm add zhipuai
+```
+
+## 7 Acknowledgement
 During the development of the Casevo, we are fortunate to have the support of a group of brilliant code contributors. 
 - [Yafang Shi](https://github.com/Freya236)
 - [Maoxu Li](https://github.com/limaoSure)
