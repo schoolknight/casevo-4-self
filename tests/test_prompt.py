@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import asyncio
 from types import SimpleNamespace
 
 import pytest
 
+from casevo.llm_interface import LLMConfig
 from casevo.prompt import PromptFactory
 
 
@@ -41,3 +43,39 @@ def test_render_and_send_prompt_success(tmp_path, dummy_llm):
 
     assert result == "mock-response:agent=tester|agent-ctx model=model-ctx extra=ok"
     assert dummy_llm.messages[-1] == "agent=tester|agent-ctx model=model-ctx extra=ok"
+
+
+class DummyPromptAsyncLLM:
+    def __init__(self) -> None:
+        self.calls = []
+
+    async def chat_async(self, config: LLMConfig, prompt):
+        self.calls.append(("chat", config.model, prompt))
+        return f"chat:{prompt}"
+
+    async def chat_stream(self, config: LLMConfig, prompt, recall):
+        self.calls.append(("chat_stream", config.model, prompt))
+        if recall:
+            recall("chunk")
+        return f"stream:{prompt}"
+
+    async def intent_analysis_async(self, config: LLMConfig, prompt, intent_tools):
+        self.calls.append(("intent_analysis", config.model, prompt, intent_tools))
+        return {"intent": "ok"}
+
+    def send_message(self, prompt_text: str):
+        return f"sync:{prompt_text}"
+
+
+def test_build_prompt_chat_async_success(tmp_path):
+    (tmp_path / "chat.txt").write_text("{{ config.system }}-{{ params.name }}", encoding="utf-8")
+    llm = DummyPromptAsyncLLM()
+    factory = PromptFactory(str(tmp_path), llm)
+    prompt = factory.build_prompt("chat", "chat.txt")
+
+    async def runner():
+        return await prompt.send_prompt(LLMConfig(system="sys", model="m"), {"name": "alice"})
+
+    result = asyncio.run(runner())
+    assert result == "chat:sys-alice"
+    assert llm.calls[-1] == ("chat", "m", "sys-alice")

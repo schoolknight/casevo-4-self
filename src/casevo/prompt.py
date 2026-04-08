@@ -1,5 +1,9 @@
 import os
+from typing import Any, Dict, Optional
+
 from jinja2 import Environment, FileSystemLoader
+
+from casevo.llm_interface import LLMConfig, LLM_INTERFACE
 
 
 #prompt
@@ -59,9 +63,58 @@ class Prompt:
         #return ""
         return self.factory.__send_message__(prompt_text)
 
+
+class PromptBase:
+    def __init__(self, tar_template, tar_factory):
+        self.template = tar_template
+        self.factory = tar_factory
+
+    def __get_prompt__(self, config: Optional[LLMConfig], tar_dict: Optional[Dict[str, Any]]):
+        tmp_dict = {
+            "config": config.to_dict() if config else {},
+            "params": tar_dict or {},
+        }
+        return self.template.render(**tmp_dict)
+
+    async def send_prompt(self, config=None, params=None, recall=None):
+        raise NotImplementedError("This method should be implemented in subclasses")
+
+
+class PromptChat(PromptBase):
+    async def send_prompt(self, config: Optional[LLMConfig] = None, params=None):
+        prompt_text = self.__get_prompt__(config, params)
+        return await self.factory.__send_message__("chat", config, prompt_text)
+
+
+class PromptChatStream(PromptBase):
+    async def send_prompt(self, config: Optional[LLMConfig] = None, params=None, recall=None):
+        prompt_text = self.__get_prompt__(config, params)
+        return await self.factory.__send_message__(
+            "chat_stream",
+            config,
+            prompt_text,
+            recall=recall,
+        )
+
+
+class PromptIntentAnalysis(PromptBase):
+    def __init__(self, tar_template, tar_factory, intents):
+        super().__init__(tar_template, tar_factory)
+        self.intents = intents
+
+    async def send_prompt(self, config: Optional[LLMConfig] = None, params=None, recall=None):
+        prompt_text = self.__get_prompt__(config, params)
+        return await self.factory.__send_message__(
+            "intent_analysis",
+            config,
+            prompt_text,
+            intent=self.intents,
+        )
+
+
 #prompt 工厂类
 class PromptFactory:
-    def __init__(self, tar_folder, llm):
+    def __init__(self, tar_folder, llm: LLM_INTERFACE):
         """
         初始化类的实例。
 
@@ -99,9 +152,37 @@ class PromptFactory:
         res_temp = self.env.get_template(tar_temp)
         return Prompt(res_temp, self)
 
-    def __send_message__(self, prompt_text):
+    def build_prompt(self, prompt_type, template_name, intents=None):
+        tar_file = os.path.join(self.prompt_folder, template_name)
+        if not os.path.exists(tar_file):
+            raise Exception("prompt file %s not exist" % template_name)
+
+        res_temp = self.env.get_template(template_name)
+
+        if prompt_type == "chat":
+            return PromptChat(res_temp, self)
+        if prompt_type == "chat_stream":
+            return PromptChatStream(res_temp, self)
+        if prompt_type == "intent_analysis":
+            return PromptIntentAnalysis(res_temp, self, intents)
+
+        raise Exception("prompt type %s not support" % prompt_type)
+
+    def __send_message__(self, prompt_text, config=None, prompt=None, recall=None, intent=None):
         #print(prompt_text)
-        return self.llm.send_message(prompt_text)
-    
+        if isinstance(prompt_text, str) and config is None and prompt is None:
+            return self.llm.send_message(prompt_text)
+
+        msg_type = prompt_text
+        if msg_type == "chat":
+            return self.llm.chat_async(config, prompt)
+
+        if msg_type == "chat_stream":
+            return self.llm.chat_stream(config, prompt, recall)
+
+        if msg_type == "intent_analysis":
+            return self.llm.intent_analysis_async(config, prompt, intent)
+
+        raise Exception("send message type not support")
 
     

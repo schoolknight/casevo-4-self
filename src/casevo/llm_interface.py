@@ -43,6 +43,47 @@ class LLM_INTERFACE(metaclass=ABCMeta):
         """
         pass
 
+    def chat(self, config: LLMConfig, prompt: Any):
+        """
+        异步工作流兼容的同步聊天接口。
+
+        默认优先尝试 send_message_by_config；若子类未实现该方法，则回退到 send_message，
+        保证仅实现同步最小接口的历史子类仍可工作。
+        """
+        try:
+            return self.send_message_by_config(prompt, config)
+        except NotImplementedError:
+            return self.send_message(prompt)
+
+    async def chat_async(self, config: LLMConfig, prompt: Any):
+        """
+        异步聊天接口（可选实现）。
+        """
+        raise NotImplementedError("chat_async not implemented")
+
+    async def chat_stream(self, config: LLMConfig, prompt: Any, recall):
+        """
+        异步流式聊天接口（可选实现）。
+        """
+        raise NotImplementedError("chat_stream not implemented")
+
+    def intent_analysis(self, config: LLMConfig, prompt: Any, intent_tools: Any):
+        """
+        同步意图分析接口（可选实现）。
+        """
+        raise NotImplementedError("intent_analysis not implemented")
+
+    async def intent_analysis_async(
+        self,
+        config: LLMConfig,
+        prompt: Any,
+        intent_tools: Any,
+    ):
+        """
+        异步意图分析接口（可选实现）。
+        """
+        raise NotImplementedError("intent_analysis_async not implemented")
+
     def send_message_by_config(
         self, prompt, llm_config: LLMConfig, json_flag: bool = False
     ):
