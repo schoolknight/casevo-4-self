@@ -26,6 +26,9 @@ glm = [
     "openai>=1.0.0",
     "zhipuai>=2.1.5",
 ]
+example = [
+    "python-dotenv>=1.0.0",
+]
 
 [tool.pdm]
 distribution = true
