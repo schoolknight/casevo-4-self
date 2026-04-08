@@ -2,6 +2,7 @@ from abc import abstractmethod
 
 import mesa
 from casevo.chain import ThoughtChain
+from casevo.context_manager import ContextManager
 
 #用于构建Agent的基类
 class AgentBase(mesa.Agent):
@@ -16,6 +17,8 @@ class AgentBase(mesa.Agent):
         """
         # 调用父类的初始化方法，传递unique_id和model
         super().__init__(unique_id, model)
+        # 某些最小测试桩不会在父类中挂载 model，这里显式保留一份确保兼容性。
+        self.model = model
         
         # 生成并分配一个特定于agent的组件ID
         self.component_id = "agent_" + str(unique_id)
@@ -25,12 +28,29 @@ class AgentBase(mesa.Agent):
         
         # 设置代理的描述信息
         self.description = description
-        
-        # 设置代理的操作上下文
-        self.context = context
+
+        # 使用上下文管理器托管上下文，保证并发安全和可扩展性。
+        self.context_manager = ContextManager(context)
         
         # 根据模型的内存工厂创建一个内存对象，用于存储代理的状态信息
         self.memory = model.memory_factory.create_memory(self)
+
+    @property
+    def context(self):
+        """
+        返回上下文字典副本。
+
+        保持 `agent.context` 的读取兼容性，同时避免外部直接改写内部状态。
+        """
+        return self.context_manager.to_dict()
+
+    @context.setter
+    def context(self, value):
+        """
+        支持整体替换上下文，保持 `agent.context = {...}` 的历史用法。
+        """
+        self.context_manager = ContextManager(value)
+
     def setup_chain(self, chain_dict):
         """
         初始化思考链集合。
