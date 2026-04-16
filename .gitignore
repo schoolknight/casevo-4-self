@@ -7,6 +7,7 @@ CLAUDE.md
 .claude/
 .spec-workflow/
 .task_prompt/
+.coverage
 
 pdm.lock
 .temp
