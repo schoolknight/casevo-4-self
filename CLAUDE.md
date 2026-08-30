@@ -9,6 +9,7 @@
 | 2026-04-07 | 完成 R005：融合 `async_workflow` 的 LLM/Prompt 异步能力回顶层模块，补充兼容性测试。 |
 | 2026-04-08 | 完成 R011：新增 `OpenAI_LLM` / `GLM_LLM` 实现、单元测试、依赖组与 README 快速接入文档。 |
 | 2026-04-16 | 完成 R020：新增 `examples/async_workflow/` 示例（基础流程与流式流程）、示例文档与运行说明。 |
+| 2026-08-30 | 完成 R021-1：新增 `FlovoClient` WebSocket 客户端、fake WS 单元测试与使用/异常说明。 |
 
 ## 项目定位
 
@@ -152,6 +153,33 @@ pdm run pytest
 - `async_workflow/para_bus.py`
 - `async_workflow/prompt.py`
 - `async_workflow/workflow.py`
+
+## R021-1 FlovoClient
+
+`casevo.flovo_client.FlovoClient` 对齐 Flovo `WsEnvelope` 协议，提供同步执行、
+流式回调执行和关闭三个 API。连接地址支持 `FLOVO_WS_URL` 环境变量覆盖（显式
+参数优先），依赖仅使用已存在的 `websockets==16.0`，无新增第三方依赖。
+
+```python
+import asyncio
+from casevo import FlovoClient
+
+async def main():
+    client = FlovoClient(url="ws://127.0.0.1:8090", timeout=30)
+    result = await client.run_workflow("demo", {"model": "gpt"}, {"prompt": "hello"})
+    print(result)
+    events = []
+    await client.run_workflow_stream("demo", {}, {"prompt": "hello"}, events.append)
+    await client.close()
+
+asyncio.run(main())
+```
+
+预期效果：客户端完成 `connect_ok → init_report → init_ok → send_input` 握手，
+收集 `output` 并在 `workflow_finished` 后返回；流式模式依次回调 `data` 与 `finish`。
+超时或连接失败会抛出 `FlovoError`（连接失败自动按 1/2/4 秒退避重试 3 次），
+服务端提前断开也会转换为 `FlovoError`；握手响应 `message_id` 错配会记录 warning
+并忽略，不会误当作有效响应。
 
 ## R011 实现记录（2026-04-08）
 
