@@ -10,6 +10,7 @@
 | 2026-04-08 | 完成 R011：新增 `OpenAI_LLM` / `GLM_LLM` 实现、单元测试、依赖组与 README 快速接入文档。 |
 | 2026-04-16 | 完成 R020：新增 `examples/async_workflow/` 示例（基础流程与流式流程）、示例文档与运行说明。 |
 | 2026-08-30 | 完成 R021-1：新增 `FlovoClient` WebSocket 客户端、fake WS 单元测试与使用/异常说明。 |
+| 2026-08-30 | 完成 R021-2：新增 Flovo `agent_dialog` 同步/流式示例、真实服务集成测试与运行文档。 |
 
 ## 项目定位
 
@@ -180,6 +181,39 @@ asyncio.run(main())
 超时或连接失败会抛出 `FlovoError`（连接失败自动按 1/2/4 秒退避重试 3 次），
 服务端提前断开也会转换为 `FlovoError`；握手响应 `message_id` 错配会记录 warning
 并忽略，不会误当作有效响应。
+
+## R021-2 Flovo agent_dialog 集成
+
+`examples/flovo_integration/agent_dialog_demo.py` 使用 R021-1 提供的
+`FlovoClient` 调用 Flovo `agent_dialog` 工作流，覆盖同步结果汇总、流式
+`data -> finish` 回调，以及非空问题进入 Mock LLM、空问题进入 `[fallback]` 的
+condition 两条路径。示例只编排输入和客户端调用，不在 Casevo 侧复制工作流逻辑。
+
+Flovo 服务启动与示例运行：
+
+```bash
+cd /home/jiangzx/project/Flovo
+RUSTFLAGS="-C linker=/usr/bin/gcc" cargo run -p flovo-ws --example server -- --config crates/flovo-ws/examples/dialog_workflow.json
+
+cd /home/jiangzx/project/casevo-4-self
+python examples/flovo_integration/agent_dialog_demo.py
+```
+
+默认连接 `ws://127.0.0.1:8090`，可通过 `FLOVO_WS_URL` 覆盖。预期同步调用返回
+Mock 回答，流式调用至少产生一个 `status == "data"` 事件并以
+`status == "finish"` 结束，空问题返回包含 `[fallback]` 的兜底结果。
+
+真实服务集成测试位于 `tests/test_flovo_integration.py`，pytest marker 已注册为
+`integration`：
+
+```bash
+pytest -m integration -v
+```
+
+测试验证同步输出、R021-1 尚未由真实服务覆盖的 output data 回调、同步/流式汇总
+一致性及 condition 两路行为。服务未启动、连接超时或 `agent_dialog` 端点不可用时，
+模块级探测会自动 skip；运行中若协议超时或连接中断，则由 `FlovoClient` 转换为
+`FlovoError`，demo 会打印服务地址检查提示并正常关闭客户端。
 
 ## R011 实现记录（2026-04-08）
 

@@ -38,3 +38,6 @@ minversion = "8.0"
 testpaths = ["tests"]
 pythonpath = ["src"]
 addopts = "-q"
+markers = [
+    "integration: tests that require a running Flovo ws_server",
+]
