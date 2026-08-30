@@ -11,6 +11,7 @@
 | 2026-04-16 | 完成 R020：新增 `examples/async_workflow/` 示例（基础流程与流式流程）、示例文档与运行说明。 |
 | 2026-08-30 | 完成 R021-1：新增 `FlovoClient` WebSocket 客户端、fake WS 单元测试与使用/异常说明。 |
 | 2026-08-30 | 完成 R021-2：新增 Flovo `agent_dialog` 同步/流式示例、真实服务集成测试与运行文档。 |
+| 2026-08-30 | 完成 R021-3：标记 `async_workflow` 已废弃，推荐使用 `FlovoClient`；保留原模块与导出以维持兼容性。 |
 
 ## 项目定位
 
@@ -19,7 +20,7 @@ Casevo（Cognitive Agents and Social Evolution Simulator）是一个基于 Pytho
 - LLM 接口抽象
 - ChromaDB 记忆检索与反思
 - CoT（ThoughtChain）步骤编排
-- 新增异步工作流子系统（`src/casevo/async_workflow/`）
+- 异步工作流子系统（`src/casevo/async_workflow/`，已废弃并由 Flovo 引擎取代；保留用于兼容存量代码）
 
 论文链接：<https://arxiv.org/abs/2412.19498>
 
@@ -83,7 +84,7 @@ Casevo（Cognitive Agents and Social Evolution Simulator）是一个基于 Pytho
 
 ## 对外 API（`src/casevo/__init__.py`）
 
-已导出同步与异步两套接口，典型入口包括：
+已导出同步与异步两套接口，典型入口包括（异步工作流导出已废弃，仅为兼容保留）：
 - 同步：`AgentBase`、`ModelBase`、`ThoughtChain`、`BaseStep`/`ChoiceStep`/`ScoreStep`/`JsonStep`、`PromptFactory`、`RequestCache`
 - 异步：`AsyncWorkFlow`、`AsyncWorkflowManager`、`AsyncBaseNode`、`AsyncParameterBus`、`AsyncPromptFactory`、`async_register_class`
 

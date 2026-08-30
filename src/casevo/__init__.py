@@ -13,6 +13,7 @@ from casevo.util.log import MesaLog
 from casevo.util.thread_send import ThreadSend
 from casevo.util.tot_log import TotLog
 from casevo.util.cache import RequestCache
+# async_workflow 已废弃（2026-08-30），由 Flovo 引擎取代；保留导出以兼容存量代码
 from casevo.async_workflow import (
     WorkFlow as AsyncWorkFlow,
     WorkflowManager as AsyncWorkflowManager,
