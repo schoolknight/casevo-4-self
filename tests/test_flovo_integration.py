@@ -11,6 +11,7 @@ from urllib.parse import quote, urlsplit, urlunsplit
 import pytest
 import websockets
 
+from casevo.context_manager import ContextManager
 from casevo.flovo_client import FlovoClient
 
 WORKFLOW_NAME = "agent_dialog"
@@ -68,11 +69,11 @@ def _content_text(value: Any) -> str:
     return "" if value is None else str(value)
 
 
-async def _run_sync(inputs: dict[str, str]) -> Any:
+async def _run_sync(inputs: dict[str, str], context: dict | None = None) -> Any:
     """使用独立客户端执行一次同步工作流并确保关闭连接。"""
     client = FlovoClient(timeout=10)
     try:
-        return await client.run_workflow(WORKFLOW_NAME, {}, inputs)
+        return await client.run_workflow(WORKFLOW_NAME, {}, inputs, context=context)
     finally:
         await client.close()
 
@@ -127,3 +128,20 @@ def test_condition_two_paths() -> None:
 
     assert "mock" in _content_text(llm_result).lower()
     assert "[fallback]" in _content_text(fallback_result).lower()
+
+
+@pytest.mark.integration
+def test_send_input_with_context_completes_workflow() -> None:
+    """验证 ContextManager 到 FlovoClient send_input 的真实传递链路。
+
+    节点级 ``context.<field>`` 读取能力由 Flovo 侧 e2e 测试覆盖；Casevo
+    侧仅验证上下文传入后工作流正常完成且不改变当前 agent_dialog 输出。
+    """
+    context = ContextManager(
+        initial_context={"user_name": "alice", "tone": "formal"}
+    ).to_dict()
+    baseline = asyncio.run(_run_sync(QUESTION_INPUTS))
+    result = asyncio.run(_run_sync({**QUESTION_INPUTS}, context=context))
+
+    assert result
+    assert result == baseline

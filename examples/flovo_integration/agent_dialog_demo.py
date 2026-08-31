@@ -2,7 +2,7 @@
 
 运行方式：先启动 Flovo WebSocket 服务，再执行
 ``python examples/flovo_integration/agent_dialog_demo.py``。
-示例覆盖同步调用、流式 data/finish 回调，以及有问题和空问题两条 condition 分支。
+示例覆盖同步调用、上下文传入、流式 data/finish 回调，以及有问题和空问题两条 condition 分支。
 """
 
 from __future__ import annotations
@@ -29,11 +29,20 @@ async def main() -> None:
         **BASE_INPUTS,
         "question": "",
     }
+    context = {"user_name": "alice", "tone": "formal"}
 
     try:
         print("\n=== Sync: non-empty question (LLM path) ===")
         sync_result = await client.run_workflow(WORKFLOW_NAME, {}, question_inputs)
         print("result:", sync_result)
+
+        print("\n=== Sync: context bridge ===")
+        print("调用方式：run_workflow(..., context={'user_name': 'alice', 'tone': 'formal'})")
+        context_result = await client.run_workflow(
+            WORKFLOW_NAME, {}, question_inputs, context=context
+        )
+        print("result:", context_result)
+        print("说明：当前 agent_dialog 节点未读取 context，输出与无 context 一致。")
 
         print("\n=== Stream: non-empty question (data -> finish) ===")
 

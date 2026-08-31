@@ -8,15 +8,16 @@ condition 分支及 Mock LLM 均由 Flovo 配置定义。
 
 - Python 环境已安装 Casevo 项目依赖。
 - 已安装 Rust 工具链。
-- Flovo 仓库位于 `/home/jiangzx/project/Flovo`。
+- Flovo 仓库已检出到本机任意目录，并通过下方 `FLOVO_REPO` 环境变量指定。
 - 本机 Rust 构建需显式使用 GCC linker：`RUSTFLAGS="-C linker=/usr/bin/gcc"`。
 
 ## 运行步骤
 
-1. 启动 Flovo WebSocket 服务：
+1. 设置 Flovo 仓库路径并启动 WebSocket 服务：
 
 ```bash
-cd /home/jiangzx/project/Flovo
+export FLOVO_REPO=/path/to/Flovo
+cd "$FLOVO_REPO"
 RUSTFLAGS="-C linker=/usr/bin/gcc" cargo run -p flovo-ws --example server -- --config crates/flovo-ws/examples/dialog_workflow.json
 ```
 
@@ -68,3 +69,21 @@ skip，而不是报错。
 空 `question` 进入 `[fallback]` 分支；示例中的非空问题包含问号，进入 Mock LLM
 流式回答分支。该测试同时补齐 R021-1 `FlovoClient` 已实现但尚未由真实服务验证的
 output `data` 回调行为。
+
+## 上下文传入（Context Bridge）
+
+Casevo 可将 agent 上下文作为 JSON 随 `send_input` 信封传给 Flovo：
+
+```python
+context = {"user_name": "alice", "tone": "formal"}
+result = await client.run_workflow(
+    "agent_dialog",
+    {},
+    {"user_id": "user-demo", "session_id": "session-demo", "question": "Hello"},
+    context=context,
+)
+```
+
+Flovo 节点可在 `input_map` 中使用 `{"input": "context.<field>"}` 读取上下文，
+语法对应 Flovo 的 `NodeHelper.get_input`。`context` 缺省或传入空字典时，发送信封
+与原有行为完全一致；当前 `agent_dialog` 未引用该字段，因此示例输出预期不变。
