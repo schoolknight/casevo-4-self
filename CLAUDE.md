@@ -12,6 +12,7 @@
 | 2026-08-30 | 完成 R021-1：新增 `FlovoClient` WebSocket 客户端、fake WS 单元测试与使用/异常说明。 |
 | 2026-08-30 | 完成 R021-2：新增 Flovo `agent_dialog` 同步/流式示例、真实服务集成测试与运行文档。 |
 | 2026-08-30 | 完成 R021-3：标记 `async_workflow` 已废弃，推荐使用 `FlovoClient`；保留原模块与导出以维持兼容性。 |
+| 2026-08-31 | 完成 R023 Casevo 侧：`FlovoClient` 支持可选 `context`，补齐信封、兼容性、类型校验与真实链路测试，更新示例和文档；分支 `feature/R023-context-bridge`。 |
 
 ## 项目定位
 
@@ -215,6 +216,31 @@ pytest -m integration -v
 一致性及 condition 两路行为。服务未启动、连接超时或 `agent_dialog` 端点不可用时，
 模块级探测会自动 skip；运行中若协议超时或连接中断，则由 `FlovoClient` 转换为
 `FlovoError`，demo 会打印服务地址检查提示并正常关闭客户端。
+
+## R023 上下文桥接（Casevo 侧）
+
+`FlovoClient.run_workflow` 与 `run_workflow_stream` 支持可选 `context` 字典，
+客户端会将其作为 `send_input` 信封 `info.context` 传给 Flovo：
+
+```python
+from casevo import FlovoClient
+from casevo.context_manager import ContextManager
+
+context = ContextManager(
+    initial_context={"user_name": "alice", "tone": "formal"}
+).to_dict()
+result = await FlovoClient().run_workflow(
+    "agent_dialog",
+    {},
+    {"question": "Hello"},
+    context=context,
+)
+```
+
+预期输出与不传 `context` 时一致（当前 `agent_dialog` 节点未读取上下文字段）。
+节点使用 `context.<field>` 的读取能力由 Flovo 侧测试覆盖。`context` 必须是字典，
+否则抛出 `TypeError`；传入 `None` 或空字典时不增加信封字段。Flovo 服务不可用时，
+集成测试通过 `require_flovo_server` 自动 skip。
 
 ## R011 实现记录（2026-04-08）
 
