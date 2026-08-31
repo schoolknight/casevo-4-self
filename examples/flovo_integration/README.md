@@ -21,7 +21,16 @@ cd "$FLOVO_REPO"
 RUSTFLAGS="-C linker=/usr/bin/gcc" cargo run -p flovo-ws --example server -- --config crates/flovo-ws/examples/dialog_workflow.json
 ```
 
-2. 可选：覆盖默认服务地址 `ws://127.0.0.1:8090`：
+2. 可选：配置真实 LLM。设置 `FLOVO_LLM_API_KEY` 后，Flovo 的 `llm_call`
+   使用 OpenAI 兼容接口；未配置时自动使用 mock，示例仍可直接运行：
+
+```bash
+export FLOVO_LLM_API_KEY=your-api-key
+export FLOVO_LLM_BASE_URL=https://api.openai.com/v1
+export FLOVO_LLM_MODEL=gpt-4o-mini
+```
+
+可选：若服务不是默认地址 `ws://127.0.0.1:8090`，另行设置：
 
 ```bash
 export FLOVO_WS_URL=ws://127.0.0.1:8090
@@ -35,8 +44,8 @@ python examples/flovo_integration/agent_dialog_demo.py
 
 ## 预期输出
 
-非空问题会进入 Mock LLM 分支。同步调用返回最终汇总结果；流式调用先收到至少一个
-`data` 事件，并以 `finish` 事件结束：
+未配置密钥时，非空问题会进入 Mock LLM 分支。同步调用返回最终汇总结果；流式调用
+先收到至少一个 `data` 事件，并以 `finish` 事件结束：
 
 ```text
 === Sync: non-empty question (LLM path) ===
@@ -50,6 +59,10 @@ event: {'status': 'finish', 'content': ['WHAT CAN FLOVO DO?', '[mock complete]']
 === Sync: empty question (fallback path) ===
 result: [fallback] no question provided
 ```
+
+配置 `FLOVO_LLM_API_KEY` 后，非空问题改走真实 LLM，返回内容由模型生成；
+`FLOVO_LLM_BASE_URL` 默认是 `https://api.openai.com/v1`，`FLOVO_LLM_MODEL`
+默认是 `gpt-4o-mini`。密钥只从环境变量读取，示例不会打印密钥内容。
 
 实际结果的外层结构可能是字典或列表，取决于 Flovo 工作流发送的 output 数量：单个
 output 直接返回其内容，多个 output 按到达顺序汇总为列表。
@@ -70,7 +83,15 @@ skip，而不是报错。
 流式回答分支。该测试同时补齐 R021-1 `FlovoClient` 已实现但尚未由真实服务验证的
 output `data` 回调行为。
 
-## 上下文传入（Context Bridge）
+## 真实 LLM 配置
+
+| 环境变量 | 是否必填 | 默认值 | 说明 |
+|---|---|---|---|
+| `FLOVO_LLM_API_KEY` | 是（真实 LLM） | 无 | OpenAI 兼容接口密钥；缺省时降级为 mock |
+| `FLOVO_LLM_BASE_URL` | 否 | `https://api.openai.com/v1` | OpenAI 兼容服务地址 |
+| `FLOVO_LLM_MODEL` | 否 | `gpt-4o-mini` | 聊天模型名称 |
+
+## 上下文个性化
 
 Casevo 可将 agent 上下文作为 JSON 随 `send_input` 信封传给 Flovo：
 
@@ -84,6 +105,7 @@ result = await client.run_workflow(
 )
 ```
 
-Flovo 节点可在 `input_map` 中使用 `{"input": "context.<field>"}` 读取上下文，
-语法对应 Flovo 的 `NodeHelper.get_input`。`context` 缺省或传入空字典时，发送信封
-与原有行为完全一致；当前 `agent_dialog` 未引用该字段，因此示例输出预期不变。
+Flovo 的 `build_prompt` 节点使用 `context.<field>` 读取上下文，并将用户画像拼入
+`llm_call` 的 prompt。带上下文时，输出会体现 `alice` 和 `formal` 等画像字段；
+不传 `context` 时，prompt 退化为原始 `question`，mock 输出也保持 `[mock] <question>`。
+语法对应 Flovo 的 `NodeHelper.get_input`。
