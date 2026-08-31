@@ -1,6 +1,11 @@
 import json
 import copy
+import glob
+import itertools
+import logging
 import os
+import threading
+from typing import Any, Callable
 
 
 """
@@ -36,10 +41,15 @@ class TotLogStream(object):
     buffer_size = 20
 
     current_num = 0
+
+    # 订阅者记录及其锁。派发时使用快照，避免回调内操作订阅导致死锁。
+    _subscribers: list[dict[str, Any]] = []
+    _subscribers_lock = threading.Lock()
+    _next_sub_id = itertools.count(1)
         
         
     @classmethod
-    def init_log(cls, agent_num, tar_folder, if_event=False, buffer_size=20):
+    def init_log(cls, agent_num, tar_folder, if_event=False, buffer_size=20, clear_old=False):
         """
         初始化日志类方法。
         
@@ -50,10 +60,19 @@ class TotLogStream(object):
         - tar_folder (str): 目标文件夹的路径，用于存储日志文件。
         - if_event (bool): 是否启用事件日志的标志，默认为False。
         - buffer_size (int): 日志缓冲区的大小，用于控制写入日志文件的时机。
+        - clear_old (bool): 是否清理目标目录中的旧日志文件，默认为False。
         
         返回:
         无返回值，但初始化了多个类变量用于记录各种日志。
         """
+        if clear_old:
+            for path in [
+                os.path.join(tar_folder, 'model.txt'),
+                os.path.join(tar_folder, 'event.txt'),
+            ] + glob.glob(os.path.join(tar_folder, 'agent_*.txt')):
+                if os.path.exists(path):
+                    os.remove(path)
+
         # 初始化模型日志列表，用于记录模型相关的日志信息。
         cls.model_log = []
         
@@ -79,6 +98,73 @@ class TotLogStream(object):
         cls.tar_folder = tar_folder
         
         cls.buffer_size = buffer_size
+
+    @classmethod
+    def subscribe(
+        cls,
+        handler: Callable[[dict[str, Any]], object],
+        owner: Any | None = None,
+        type: Any | None = None,
+    ) -> int:
+        """
+        订阅日志事件。
+
+        参数:
+        - handler: 接收事件字典的可调用对象。
+        - owner: 可选的日志所有者过滤条件。
+        - type: 可选的日志类型过滤条件。
+
+        返回:
+        - int: 可用于退订的唯一订阅 ID。
+
+        订阅者列表由锁保护；回调在锁外执行。
+        """
+        if not callable(handler):
+            raise TypeError('handler must be callable')
+        with cls._subscribers_lock:
+            sub_id = next(cls._next_sub_id)
+            cls._subscribers.append({
+                'sub_id': sub_id,
+                'handler': handler,
+                'owner': owner,
+                'type': type,
+            })
+        return sub_id
+
+    @classmethod
+    def unsubscribe(cls, sub_id: int) -> bool:
+        """
+        取消订阅。
+
+        返回:
+        - bool: 找到并移除订阅时返回True，否则返回False。
+        """
+        with cls._subscribers_lock:
+            for index, subscriber in enumerate(cls._subscribers):
+                if subscriber['sub_id'] == sub_id:
+                    del cls._subscribers[index]
+                    return True
+        return False
+
+    @classmethod
+    def _emit(cls, event: dict[str, Any]) -> None:
+        """向匹配的订阅者同步派发事件；单个回调异常不会中断日志流程。"""
+        if not cls._subscribers:
+            return
+        with cls._subscribers_lock:
+            subscribers = list(cls._subscribers)
+        for subscriber in subscribers:
+            if subscriber['owner'] is not None and subscriber['owner'] != event['owner']:
+                continue
+            if subscriber['type'] is not None and subscriber['type'] != event['type']:
+                continue
+            try:
+                subscriber['handler'](event)
+            except Exception:
+                logging.exception(
+                    'TotLogStream subscriber %s handler failed',
+                    subscriber['sub_id'],
+                )
             
 
     @classmethod
@@ -115,6 +201,13 @@ class TotLogStream(object):
                 'type': tar_type,
                 'item': tar_item
             })
+
+        cls._emit({
+            'ts': tar_ts + cls.offset,
+            'owner': 'model',
+            'type': tar_type,
+            'item': tar_item,
+        })
         
         # 增加当前日志条目计数。
         cls.current_num += 1
@@ -149,6 +242,12 @@ class TotLogStream(object):
                 'type': tar_type,
                 'item': tar_item
             })
+        cls._emit({
+            'ts': tar_ts + cls.offset,
+            'owner': 'agent_{}'.format(tar_agent_id),
+            'type': tar_type,
+            'item': tar_item,
+        })
         cls.current_num += 1
         if cls.current_num >= cls.buffer_size:
             cls.write_log()
@@ -223,10 +322,3 @@ class TotLogStream(object):
         cls.model_log = []
         cls.agent_log = [[] for i in range(cls.agent_num)]
         cls.event_log = []
-            
-
-
-                
-
-
-            
