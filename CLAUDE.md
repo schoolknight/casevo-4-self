@@ -14,6 +14,7 @@
 | 2026-08-30 | 完成 R021-3：标记 `async_workflow` 已废弃，推荐使用 `FlovoClient`；保留原模块与导出以维持兼容性。 |
 | 2026-08-31 | 完成 R023 Casevo 侧：`FlovoClient` 支持可选 `context`，补齐信封、兼容性、类型校验与真实链路测试，更新示例和文档；分支 `feature/R023-context-bridge`。 |
 | 2026-08-31 | 完成 R024 Casevo 侧：升级 `agent_dialog` 真实 LLM/mock 降级示例，更新 context 个性化集成断言、运行文档与异常说明；分支 `feature/R024-real-llm-demo`。 |
+| 2026-08-31 | 完成 R025+R006：为 `TotLogStream` 增加线程安全发布-订阅核心与 owner/type 过滤、异常隔离，并为 `init_log` 增加 `clear_old` 自动清理选项；分支 `feature/R025-log-stream`。 |
 
 ## 项目定位
 
@@ -408,3 +409,23 @@ pdm run python examples/async_workflow/streaming_workflow.py
 3. 工作流未完成就读取结果
    - 触发点：`WorkFlow.get_result()`
    - 处理：抛出 `workflow not finish!`，要求先等待 `run_all()` 执行结束。
+
+## R025 日志流发布-订阅与 R006 自动清理
+
+`TotLogStream` 支持通过 `subscribe` 注册同步回调，回调接收包含 `ts`、`owner`、
+`type`、`item` 的事件字典；可按 owner 或 type 过滤，并通过 `unsubscribe` 退订。
+订阅者快照在锁外派发，订阅列表由线程锁保护，因此回调内再次订阅或退订不会造成
+死锁。单个回调抛出的异常会被记录并隔离，不影响后续回调和日志写入。
+
+```python
+from casevo.util.tot_log_stream import TotLogStream
+
+subscription_id = TotLogStream.subscribe(lambda event: print(event), owner="model")
+TotLogStream.init_log(agent_num=2, tar_folder="./logs", clear_old=True)
+TotLogStream.add_model_log(1, "thought", "hello")
+TotLogStream.unsubscribe(subscription_id)
+```
+
+`init_log(..., clear_old=True)` 会在初始化时删除目标目录中的 `model.txt`、所有
+`agent_*.txt` 与 `event.txt`；默认 `clear_old=False` 保持原有 append 行为，旧文件
+内容会被保留并继续追加。
