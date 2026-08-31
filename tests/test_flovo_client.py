@@ -73,6 +73,80 @@ def test_send_input_envelope_contains_protocol_fields(monkeypatch):
     }
 
 
+def test_send_input_envelope_includes_context(monkeypatch):
+    ws = FakeWebSocket(
+        [
+            envelope("demo", "connect_ok", 0),
+            envelope("demo", "init_ok", 1),
+            envelope("demo", "workflow_finished"),
+        ]
+    )
+
+    async def connect(_url):
+        return ws
+
+    context = {"user_name": "alice", "tone": "formal"}
+    monkeypatch.setattr("casevo.flovo_client.websockets.connect", connect)
+    result = run(
+        FlovoClient(timeout=0.1).run_workflow(
+            "demo", {"temperature": 0.2}, {"prompt": "hi"}, context=context
+        )
+    )
+
+    assert result == {}
+    assert ws.sent[1] == {
+        "type": "service",
+        "workflow": "demo",
+        "cmd": "send_input",
+        "message_id": 2,
+        "info": {"temperature": 0.2, "prompt": "hi", "context": context},
+        "resource": None,
+    }
+
+
+def test_send_input_without_context_is_backward_compatible(monkeypatch):
+    ws = FakeWebSocket(
+        [
+            envelope("demo", "connect_ok", 0),
+            envelope("demo", "init_ok", 1),
+            envelope("demo", "workflow_finished"),
+        ]
+    )
+
+    async def connect(_url):
+        return ws
+
+    monkeypatch.setattr("casevo.flovo_client.websockets.connect", connect)
+    run(FlovoClient(timeout=0.1).run_workflow("demo", {"temperature": 0.2}, {"prompt": "hi"}))
+
+    assert ws.sent[1]["info"] == {"temperature": 0.2, "prompt": "hi"}
+    assert "context" not in ws.sent[1]["info"]
+
+
+def test_send_input_with_empty_context_is_backward_compatible(monkeypatch):
+    ws = FakeWebSocket(
+        [
+            envelope("demo", "connect_ok", 0),
+            envelope("demo", "init_ok", 1),
+            envelope("demo", "workflow_finished"),
+        ]
+    )
+
+    async def connect(_url):
+        return ws
+
+    monkeypatch.setattr("casevo.flovo_client.websockets.connect", connect)
+    run(FlovoClient(timeout=0.1).run_workflow("demo", {"temperature": 0.2}, {"prompt": "hi"}, context={}))
+
+    assert ws.sent[1]["info"] == {"temperature": 0.2, "prompt": "hi"}
+    assert "context" not in ws.sent[1]["info"]
+
+
+def test_context_must_be_a_dict():
+    with pytest.raises(TypeError, match="context must be a dictionary"):
+        run(FlovoClient(timeout=0.1).run_workflow("demo", {}, {}, context="invalid"))
+
+
 def test_run_workflow_parses_single_output(monkeypatch):
     ws = FakeWebSocket(
         [

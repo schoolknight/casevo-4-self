@@ -43,13 +43,20 @@ class FlovoClient:
         self.timeout = timeout
         self._active_connections: list[Any] = []
 
-    async def run_workflow(self, workflow_name: str, config: dict, inputs: dict) -> dict:
+    async def run_workflow(
+        self,
+        workflow_name: str,
+        config: dict,
+        inputs: dict,
+        context: dict | None = None,
+    ) -> dict:
         """同步执行工作流并收集完整输出。
 
         一个 output 返回其 ``info``，多个 output 返回按顺序排列的列表，
-        没有 output 时返回空字典。
+        没有 output 时返回空字典。``context`` 会作为上下文 JSON 随
+        ``send_input`` 信封传给 Flovo，工作流节点可用 ``context.<field>`` 读取。
         """
-        return await self._execute(workflow_name, config, inputs)
+        return await self._execute(workflow_name, config, inputs, context=context)
 
     async def run_workflow_stream(
         self,
@@ -57,11 +64,16 @@ class FlovoClient:
         config: dict,
         inputs: dict,
         callback: Callable[[dict], None],
+        context: dict | None = None,
     ) -> dict:
-        """流式执行工作流，并回调 data chunk 与最终 finish 事件。"""
+        """流式执行工作流，并回调 data chunk 与最终 finish 事件。
+
+        ``context`` 会作为上下文 JSON 随 ``send_input`` 信封传给 Flovo，
+        工作流节点可用 ``context.<field>`` 读取。
+        """
         if not callable(callback):
             raise TypeError("callback must be callable")
-        return await self._execute(workflow_name, config, inputs, callback)
+        return await self._execute(workflow_name, config, inputs, callback, context)
 
     async def close(self) -> None:
         """优雅关闭客户端已建立的 WebSocket 连接。"""
@@ -81,17 +93,26 @@ class FlovoClient:
         config: dict,
         inputs: dict,
         callback: Callable[[dict], None] | None = None,
+        context: dict | None = None,
     ) -> dict:
         if not isinstance(workflow_name, str) or not workflow_name:
             raise ValueError("workflow_name must be a non-empty string")
         if not isinstance(config, dict) or not isinstance(inputs, dict):
             raise TypeError("config and inputs must be dictionaries")
+        self._validate_context(context)
 
         websocket = await self._connect_with_retry(workflow_name)
         self._active_connections.append(websocket)
         try:
             init_message_id = await self._handshake(websocket, workflow_name)
-            await self._send_input(websocket, workflow_name, init_message_id + 1, config, inputs)
+            await self._send_input(
+                websocket,
+                workflow_name,
+                init_message_id + 1,
+                config,
+                inputs,
+                context,
+            )
             outputs: list[Any] = []
             while True:
                 envelope = await self._receive_envelope(websocket)
@@ -182,11 +203,22 @@ class FlovoClient:
         message_id: int,
         config: dict,
         inputs: dict,
+        context: dict | None = None,
     ) -> None:
         # Flovo 将工作流输入直接放在 info 中；非空 config 与 inputs 合并，
         # inputs 优先覆盖同名配置，避免额外嵌套破坏服务端字段读取。
+        self._validate_context(context)
         info = dict(inputs) if not config else {**config, **inputs}
+        if context:
+            # context 参数优先级高于 config/inputs 中可能存在的同名字段。
+            info["context"] = context
         await self._send_envelope(websocket, workflow_name, "send_input", message_id, info)
+
+    @staticmethod
+    def _validate_context(context: dict | None) -> None:
+        """校验上下文必须为空或字典。"""
+        if context is not None and not isinstance(context, dict):
+            raise TypeError("context must be a dictionary or None")
 
     async def _send_envelope(
         self, websocket: Any, workflow_name: str, command: str, message_id: int, info: dict
