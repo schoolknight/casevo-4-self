@@ -8,6 +8,8 @@
 from __future__ import annotations
 
 import asyncio
+import os
+from typing import Any
 
 from casevo.flovo_client import FlovoClient, FlovoError
 
@@ -16,6 +18,30 @@ BASE_INPUTS = {
     "user_id": "user-demo",
     "session_id": "session-demo",
 }
+
+
+def _content_text(value: Any) -> str:
+    """递归提取工作流结果中的文本，兼容单 output 和多 output 结果。"""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, dict):
+        return " ".join(_content_text(item) for item in value.values())
+    if isinstance(value, list):
+        return " ".join(_content_text(item) for item in value)
+    return "" if value is None else str(value)
+
+
+def _print_llm_configuration() -> None:
+    """说明真实 LLM 的环境变量配置状态，不打印密钥内容。"""
+    print("=== LLM configuration ===")
+    if os.getenv("FLOVO_LLM_API_KEY"):
+        print("已检测到 FLOVO_LLM_API_KEY，llm_call 将使用真实 OpenAI 兼容接口。")
+    else:
+        print("未配置 FLOVO_LLM_API_KEY，llm_call 将自动降级为 mock。")
+    print(
+        "可选配置：FLOVO_LLM_BASE_URL（默认 https://api.openai.com/v1）、"
+        "FLOVO_LLM_MODEL（默认 gpt-4o-mini）。"
+    )
 
 
 async def main() -> None:
@@ -32,6 +58,7 @@ async def main() -> None:
     context = {"user_name": "alice", "tone": "formal"}
 
     try:
+        _print_llm_configuration()
         print("\n=== Sync: non-empty question (LLM path) ===")
         sync_result = await client.run_workflow(WORKFLOW_NAME, {}, question_inputs)
         print("result:", sync_result)
@@ -42,7 +69,13 @@ async def main() -> None:
             WORKFLOW_NAME, {}, question_inputs, context=context
         )
         print("result:", context_result)
-        print("说明：当前 agent_dialog 节点未读取 context，输出与无 context 一致。")
+        context_text = _content_text(context_result).lower()
+        if "alice" in context_text and "formal" in context_text:
+            print("说明：上下文已影响输出，结果包含 user_name=alice 与 tone=formal。")
+        else:
+            print(
+                "提示：输出未包含 alice/formal，请确认 Flovo 侧已合入 R024 的 build_prompt 节点。"
+            )
 
         print("\n=== Stream: non-empty question (data -> finish) ===")
 

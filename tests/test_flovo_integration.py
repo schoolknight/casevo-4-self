@@ -134,14 +134,37 @@ def test_condition_two_paths() -> None:
 def test_send_input_with_context_completes_workflow() -> None:
     """验证 ContextManager 到 FlovoClient send_input 的真实传递链路。
 
-    节点级 ``context.<field>`` 读取能力由 Flovo 侧 e2e 测试覆盖；Casevo
-    侧仅验证上下文传入后工作流正常完成且不改变当前 agent_dialog 输出。
+    Flovo 的 build_prompt 节点会读取 ``context.<field>`` 并将画像字段拼入 prompt，
+    因此这里验证上下文影响了最终输出。
     """
     context = ContextManager(
         initial_context={"user_name": "alice", "tone": "formal"}
     ).to_dict()
-    baseline = asyncio.run(_run_sync(QUESTION_INPUTS))
     result = asyncio.run(_run_sync({**QUESTION_INPUTS}, context=context))
 
     assert result
-    assert result == baseline
+    result_text = _content_text(result).lower()
+    assert "alice" in result_text
+    assert "formal" in result_text
+
+
+@pytest.mark.integration
+def test_send_input_without_context_degrades_to_mock() -> None:
+    """验证不传上下文时仍保持 mock 降级行为。"""
+    result = asyncio.run(_run_sync(QUESTION_INPUTS))
+
+    assert result
+    assert "[mock]" in _content_text(result).lower()
+
+
+@pytest.mark.integration
+@pytest.mark.skipif(
+    os.getenv("FLOVO_LLM_API_KEY") is None,
+    reason="FLOVO_LLM_API_KEY not set",
+)
+def test_real_llm_execution_when_configured() -> None:
+    """配置密钥时验证 Flovo 的真实 LLM 链路可返回结果。"""
+    result = asyncio.run(_run_sync(QUESTION_INPUTS))
+
+    assert result
+    assert "[mock]" not in _content_text(result).lower()

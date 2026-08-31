@@ -13,6 +13,7 @@
 | 2026-08-30 | 完成 R021-2：新增 Flovo `agent_dialog` 同步/流式示例、真实服务集成测试与运行文档。 |
 | 2026-08-30 | 完成 R021-3：标记 `async_workflow` 已废弃，推荐使用 `FlovoClient`；保留原模块与导出以维持兼容性。 |
 | 2026-08-31 | 完成 R023 Casevo 侧：`FlovoClient` 支持可选 `context`，补齐信封、兼容性、类型校验与真实链路测试，更新示例和文档；分支 `feature/R023-context-bridge`。 |
+| 2026-08-31 | 完成 R024 Casevo 侧：升级 `agent_dialog` 真实 LLM/mock 降级示例，更新 context 个性化集成断言、运行文档与异常说明；分支 `feature/R024-real-llm-demo`。 |
 
 ## 项目定位
 
@@ -194,10 +195,10 @@ condition 两条路径。示例只编排输入和客户端调用，不在 Casevo
 Flovo 服务启动与示例运行：
 
 ```bash
-cd /home/jiangzx/project/Flovo
+cd /path/to/Flovo
 RUSTFLAGS="-C linker=/usr/bin/gcc" cargo run -p flovo-ws --example server -- --config crates/flovo-ws/examples/dialog_workflow.json
 
-cd /home/jiangzx/project/casevo-4-self
+cd /path/to/casevo-4-self
 python examples/flovo_integration/agent_dialog_demo.py
 ```
 
@@ -216,6 +217,22 @@ pytest -m integration -v
 一致性及 condition 两路行为。服务未启动、连接超时或 `agent_dialog` 端点不可用时，
 模块级探测会自动 skip；运行中若协议超时或连接中断，则由 `FlovoClient` 转换为
 `FlovoError`，demo 会打印服务地址检查提示并正常关闭客户端。
+
+## R024 集成示例升级（Casevo 侧）
+
+当前分支为 `feature/R024-real-llm-demo`。运行示例前先启动 Flovo server；如需真实
+LLM，配置 `FLOVO_LLM_API_KEY`，并可选配置 `FLOVO_LLM_BASE_URL`（默认
+`https://api.openai.com/v1`）与 `FLOVO_LLM_MODEL`（默认 `gpt-4o-mini`），然后执行：
+
+```bash
+python examples/flovo_integration/agent_dialog_demo.py
+```
+
+配置密钥时，Flovo 的 `llm_call` 使用真实 OpenAI 兼容接口；未配置密钥时自动降级为
+mock。无 context 时 mock 输出为 `[mock] <question>`；传入
+`{"user_name": "alice", "tone": "formal"}` 后，R024 的 `build_prompt` 节点会把
+画像字段拼入 prompt，输出应包含 `alice` 与 `formal`。若 Flovo server 不可用，
+集成测试通过 `require_flovo_server` 自动 skip。
 
 ## R023 上下文桥接（Casevo 侧）
 
@@ -237,10 +254,9 @@ result = await FlovoClient().run_workflow(
 )
 ```
 
-预期输出与不传 `context` 时一致（当前 `agent_dialog` 节点未读取上下文字段）。
-节点使用 `context.<field>` 的读取能力由 Flovo 侧测试覆盖。`context` 必须是字典，
-否则抛出 `TypeError`；传入 `None` 或空字典时不增加信封字段。Flovo 服务不可用时，
-集成测试通过 `require_flovo_server` 自动 skip。
+R024 起，Flovo 的 `build_prompt` 节点读取 `context.<field>` 并将字段拼入 prompt，
+因此带 context 的输出会区别于无 context 的输出。`context` 必须是字典，否则抛出
+`TypeError`；传入 `None` 或空字典时不增加信封字段。
 
 ## R011 实现记录（2026-04-08）
 
@@ -327,7 +343,7 @@ print(type(vectors), len(vectors), len(vectors[0]))  # 预期：list, N, embeddi
 
 ### 参考文档
 
-项目的上下文主要在 `/home/jiangzx/project/casevo-4-self/CLAUDE.md` 中（这句话原封不动保留）
+项目的上下文主要在根目录 `CLAUDE.md` 中。
 
 ### 目标
 
