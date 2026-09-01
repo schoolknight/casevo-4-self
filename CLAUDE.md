@@ -15,6 +15,7 @@
 | 2026-08-31 | 完成 R023 Casevo 侧：`FlovoClient` 支持可选 `context`，补齐信封、兼容性、类型校验与真实链路测试，更新示例和文档；分支 `feature/R023-context-bridge`。 |
 | 2026-08-31 | 完成 R024 Casevo 侧：升级 `agent_dialog` 真实 LLM/mock 降级示例，更新 context 个性化集成断言、运行文档与异常说明；分支 `feature/R024-real-llm-demo`。 |
 | 2026-08-31 | 完成 R025+R006：为 `TotLogStream` 增加线程安全发布-订阅核心与 owner/type 过滤、异常隔离，并为 `init_log` 增加 `clear_old` 自动清理选项；分支 `feature/R025-log-stream`。 |
+| 2026-09-01 | 完成 R026：新增 `LogStreamServer` WebSocket 推送适配器与本机集成测试；分支 `feature/R026-log-stream-server`。 |
 
 ## 项目定位
 
@@ -23,6 +24,7 @@ Casevo（Cognitive Agents and Social Evolution Simulator）是一个基于 Pytho
 - LLM 接口抽象
 - ChromaDB 记忆检索与反思
 - CoT（ThoughtChain）步骤编排
+- `TotLogStream` 日志发布订阅与 `LogStreamServer` WebSocket 实时转发
 - 异步工作流子系统（`src/casevo/async_workflow/`，已废弃并由 Flovo 引擎取代；保留用于兼容存量代码）
 
 论文链接：<https://arxiv.org/abs/2412.19498>
@@ -55,6 +57,7 @@ Casevo（Cognitive Agents and Social Evolution Simulator）是一个基于 Pytho
 │       ├── thread_send.py
 │       ├── tot_log.py
 │       ├── tot_log_stream.py
+│       ├── log_stream_server.py
 │       ├── log.py
 │       └── random_name.py
 └── tests/
@@ -81,6 +84,7 @@ Casevo（Cognitive Agents and Social Evolution Simulator）是一个基于 Pytho
   - `mesa==2.4.0`
   - `chromadb>=0.5.0`
   - `requests>=2.33.1`
+- 日志流网络适配使用环境中既有的 `websockets==16.0` 传递依赖，本任务不新增依赖。
 - 测试依赖（optional group `test`）:
   - `pytest>=8,<9`
   - `pytest-cov>=5,<6`
@@ -258,6 +262,45 @@ result = await FlovoClient().run_workflow(
 R024 起，Flovo 的 `build_prompt` 节点读取 `context.<field>` 并将字段拼入 prompt，
 因此带 context 的输出会区别于无 context 的输出。`context` 必须是字典，否则抛出
 `TypeError`；传入 `None` 或空字典时不增加信封字段。
+
+## R026 日志流 WebSocket 推送
+
+`casevo.util.log_stream_server.LogStreamServer` 是 `TotLogStream` 的轻量网络适配器：
+服务在守护线程中运行独立 asyncio 事件循环，客户端连接后自动订阅日志；每个连接
+拥有独立队列，事件以 `{"status": "data", "event": {...}}` JSON 消息广播给所有客户端。
+`websockets==16.0` 为既有传递依赖，R026 未修改项目依赖声明。
+
+启动服务并连接客户端：
+
+```python
+import asyncio
+import websockets
+from casevo.util.log_stream_server import LogStreamServer
+from casevo.util.tot_log_stream import TotLogStream
+
+async def receive():
+    async with websockets.connect("ws://127.0.0.1:8765") as ws:
+        await asyncio.sleep(0.1)  # 等待服务端连接处理器完成自动订阅
+        TotLogStream.add_model_log(1, "thought", "hello")
+        print(await ws.recv())
+
+server = LogStreamServer()
+server.start()
+asyncio.run(receive())
+server.stop()
+```
+
+随后调用 `TotLogStream.add_model_log(...)` 或 `add_agent_log(...)`，客户端会收到类似：
+
+```json
+{"status":"data","event":{"ts":1,"owner":"model","type":"thought","item":"hello"}}
+```
+
+服务未启动时不会创建线程、事件循环或订阅。重复 `start()` / `stop()` 是幂等的，停止后
+可以再次启动。客户端断开、发送失败或任务取消时，连接处理器会在 `finally` 中调用
+`TotLogStream.unsubscribe`；停止服务还会关闭监听器和所有现有连接。端口绑定失败会由
+`start()` 抛出 `RuntimeError`（原始异常作为 cause），单个客户端异常只记录日志并清理自身，
+不会影响其他连接或 `TotLogStream` 的同步日志写入。
 
 ## R011 实现记录（2026-04-08）
 
